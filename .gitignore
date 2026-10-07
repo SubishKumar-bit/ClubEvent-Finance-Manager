@@ -1,0 +1,22 @@
+﻿# Java compiled output
+out/
+*.class
+
+# IDE settings
+.vscode/
+.idea/
+*.iml
+
+# Java/JavaFX SDK archive
+*.zip
+
+# Temporary files
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local SQLite database
+data/*.db
