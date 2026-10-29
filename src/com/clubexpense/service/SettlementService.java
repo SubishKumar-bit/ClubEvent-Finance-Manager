@@ -1,55 +1,87 @@
+
 package com.clubexpense.service;
 
 import com.clubexpense.dao.ExpenseDAO;
-import com.clubexpense.dao.ParticipantDAO;
 import com.clubexpense.model.Expense;
-import com.clubexpense.model.Participant;
-import com.clubexpense.model.SettlementCalculator;
-
+import com.clubexpense.model.User;
+import com.clubexpense.security.Authorization;
 import java.sql.SQLException;
 import java.util.List;
 
 public class SettlementService {
 
     private final ExpenseDAO expenseDAO;
-    private final ParticipantDAO participantDAO;
+    private final User user;
 
-    public SettlementService() {
-        expenseDAO = new ExpenseDAO();
-        participantDAO = new ParticipantDAO();
+    public SettlementService(User user) {
+        if (user == null) {
+            throw new SecurityException(
+                    "An authenticated user is required.");
+        }
+
+        this.user = user;
+        this.expenseDAO = new ExpenseDAO();
     }
 
-    public List<SettlementCalculator.Balance>
-    calculateSettlement(int eventId) throws SQLException {
+    public List<Expense> getExpenses(int eventId)
+            throws SQLException {
 
-        List<Expense> expenses =
-                expenseDAO.getByEventId(eventId);
+        Authorization.requireFinanceAccess(user);
+        validateEventId(eventId);
 
-        List<Participant> participants =
-                participantDAO.getByEventId(eventId);
-
-        return SettlementCalculator.calculate(
-                expenses,
-                participants
-        );
+        return expenseDAO.getByEventId(eventId);
     }
 
     public double getTotalExpenses(int eventId)
             throws SQLException {
 
-        return expenseDAO.getByEventId(eventId)
+        Authorization.requireFinanceAccess(user);
+
+        return getExpenses(eventId)
                 .stream()
                 .mapToDouble(Expense::getAmount)
                 .sum();
     }
 
-    public double getTotalCollected(int eventId)
+    public double getTotalSettled(int eventId)
             throws SQLException {
 
-        return participantDAO.getByEventId(eventId)
+        Authorization.requireFinanceAccess(user);
+
+        return getExpenses(eventId)
                 .stream()
-                .filter(p -> "Paid".equalsIgnoreCase(p.getStatus()))
-                .mapToDouble(Participant::getFee)
+                .mapToDouble(Expense::getSettledAmount)
                 .sum();
+    }
+
+    public double getOutstandingTotal(int eventId)
+            throws SQLException {
+
+        Authorization.requireFinanceAccess(user);
+
+        return getExpenses(eventId)
+                .stream()
+                .mapToDouble(Expense::getRemainingSettlementAmount)
+                .sum();
+    }
+
+    public long getPendingCount(int eventId)
+            throws SQLException {
+
+        Authorization.requireFinanceAccess(user);
+
+        return getExpenses(eventId)
+                .stream()
+                .filter(expense ->
+                        !"SETTLED".equalsIgnoreCase(
+                                expense.getSettlementStatus()))
+                .count();
+    }
+
+    private void validateEventId(int eventId) {
+        if (eventId <= 0) {
+            throw new IllegalArgumentException(
+                    "A valid event is required.");
+        }
     }
 }

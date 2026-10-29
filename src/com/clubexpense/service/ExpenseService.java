@@ -84,4 +84,20 @@ public class ExpenseService {
             );
         }
     }
+
+    public boolean updateReceiptPath(int expenseId,String receiptPath) throws SQLException {
+        if (expenseId <= 0) {
+            throw new IllegalArgumentException(
+                "A valid expense must be selected.");
+        }
+        if (receiptPath != null && receiptPath.isBlank()) {
+            receiptPath = null;
+        }
+        
+        return expenseDAO.updateReceiptPath(
+            expenseId,
+            receiptPath
+        );
+    }
+
 }

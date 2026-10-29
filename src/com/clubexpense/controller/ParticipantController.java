@@ -2,27 +2,39 @@ package com.clubexpense.controller;
 
 import com.clubexpense.model.Event;
 import com.clubexpense.model.Participant;
+import com.clubexpense.model.User;
 import com.clubexpense.service.ParticipantService;
+import com.clubexpense.security.Authorization;
+
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
 
 import java.util.List;
 
 public class ParticipantController {
 
-    private final Stage stage;
     private final Event event;
     private final ParticipantService service;
+    private final NavigationManager navigationManager;
+    private final User user;
 
     private final TableView<Participant> table =
             new TableView<>();
+    private final TextField searchParticipantsField = new TextField();
+    private final ComboBox<String> participantStatusFilter =
+            new ComboBox<>(FXCollections.observableArrayList(
+                    "All statuses", "Paid", "Waiting"));
+    private final ObservableList<Participant> allParticipants =
+            FXCollections.observableArrayList();
+    private final FilteredList<Participant> filteredParticipants =
+            new FilteredList<>(allParticipants, participant -> true);
 
     private final TextField name =
             new TextField();
@@ -42,7 +54,10 @@ public class ParticipantController {
     private final TextField fee =
             new TextField();
 
-    // Statistics
+    // =========================================================
+    // STATISTICS
+    // =========================================================
+
     private final Label totalParticipantsLabel =
             new Label("0");
 
@@ -55,38 +70,44 @@ public class ParticipantController {
     private final Label totalFeesLabel =
             new Label("₹ 0.00");
 
-
-    public ParticipantController(
-            Stage stage,
-            Event event) {
-
-        this.stage = stage;
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+    public ParticipantController(NavigationManager navigationManager,Event event,User user) {
+        this.navigationManager = navigationManager;
         this.event = event;
-        this.service = new ParticipantService();
-    }
+        this.user = user;
+        this.service = new ParticipantService(user);
+        this.navigationManager.setSelectedEvent(event);}
 
 
     // =========================================================
-    // MAIN VIEW
+    // MAIN CONTENT VIEW
     // =========================================================
 
-    public Parent createView() {
+    public Parent createContentView() {
 
-        BorderPane root = new BorderPane();
+        VBox content =
+                new VBox(20);
 
-        root.getStyleClass().add("dashboard-root");
+        content.setPadding(
+                new Insets(
+                        25,
+                        32,
+                        32,
+                        32
+                )
+        );
 
-        VBox sidebar = createSidebar();
+        content.getStyleClass().add(
+                "main-content"
+        );
 
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(25));
-        content.getStyleClass().add("main-content");
+        VBox heading =
+                createHeading();
 
-        HBox topBar = createTopBar();
-
-        VBox heading = createHeading();
-
-        HBox statistics = createStatistics();
+        HBox statistics =
+                createStatistics();
 
         VBox participantsSection =
                 createParticipantsSection();
@@ -105,293 +126,23 @@ public class ParticipantController {
                 new ScrollPane(content);
 
         scrollPane.setFitToWidth(true);
+
         scrollPane.setFitToHeight(false);
+
+        scrollPane.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
+        );
 
         scrollPane.getStyleClass().add(
                 "content-scroll"
         );
 
-        BorderPane center = new BorderPane();
-
-        center.setTop(topBar);
-        center.setCenter(scrollPane);
-
-        root.setLeft(sidebar);
-        root.setCenter(center);
-
         createTable();
 
         loadParticipants();
 
-        return root;
+        return scrollPane;
     }
-
-
-    // =========================================================
-    // SIDEBAR
-    // =========================================================
-
-    private VBox createSidebar() {
-
-        VBox sidebar = new VBox(8);
-
-        sidebar.setPrefWidth(225);
-
-        sidebar.setPadding(
-                new Insets(25, 15, 20, 15)
-        );
-
-        sidebar.getStyleClass().add(
-                "sidebar"
-        );
-
-
-        // Logo
-
-        HBox logoBox = new HBox(10);
-
-        logoBox.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        logoBox.setPadding(
-                new Insets(0, 8, 25, 8)
-        );
-
-        Label logoIcon =
-                new Label("CE");
-
-        logoIcon.getStyleClass().add(
-                "logo-icon"
-        );
-
-        Label logoText =
-                new Label("ClubEvent");
-
-        logoText.getStyleClass().add(
-                "logo-text"
-        );
-
-        logoBox.getChildren().addAll(
-                logoIcon,
-                logoText
-        );
-
-
-        // Navigation
-
-        Button dashboardButton =
-                createSidebarButton(
-                        "▦",
-                        "Dashboard"
-                );
-
-        Button eventsButton =
-                createSidebarButton(
-                        "▣",
-                        "Events"
-                );
-
-        Button participantsButton =
-                createSidebarButton(
-                        "♙",
-                        "Participants"
-                );
-
-        Button expensesButton =
-                createSidebarButton(
-                        "₹",
-                        "Expenses"
-                );
-
-        Button settlementButton =
-                createSidebarButton(
-                        "⇄",
-                        "Settlement"
-                );
-
-
-        participantsButton.getStyleClass().add(
-                "sidebar-button-active"
-        );
-
-
-        // Events navigation
-
-        eventsButton.setOnAction(e -> {
-
-            EventController controller =
-                    new EventController(stage);
-
-            Scene scene = new Scene(
-                    controller.createView(),
-                    1100,
-                    700
-            );
-
-            applyStyles(scene);
-
-            stage.setScene(scene);
-        });
-
-
-        Region spacer = new Region();
-
-        VBox.setVgrow(
-                spacer,
-                Priority.ALWAYS
-        );
-
-
-        Button settingsButton =
-                createSidebarButton(
-                        "⚙",
-                        "Settings"
-                );
-
-        Button logoutButton =
-                createSidebarButton(
-                        "→",
-                        "Logout"
-                );
-
-
-        logoutButton.setOnAction(e -> {
-
-            LoginController loginController =
-                    new LoginController(stage);
-
-            Scene scene = new Scene(
-                    loginController.createView(),
-                    950,
-                    600
-            );
-
-            applyStyles(scene);
-
-            stage.setScene(scene);
-        });
-
-
-        sidebar.getChildren().addAll(
-                logoBox,
-                dashboardButton,
-                eventsButton,
-                participantsButton,
-                expensesButton,
-                settlementButton,
-                spacer,
-                settingsButton,
-                logoutButton
-        );
-
-        return sidebar;
-    }
-
-
-    private Button createSidebarButton(
-            String icon,
-            String text) {
-
-        Button button =
-                new Button(
-                        icon + "   " + text
-                );
-
-        button.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        button.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        button.getStyleClass().add(
-                "sidebar-button"
-        );
-
-        return button;
-    }
-
-
-    // =========================================================
-    // TOP BAR
-    // =========================================================
-
-    private HBox createTopBar() {
-
-        HBox topBar =
-                new HBox();
-
-        topBar.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        topBar.setPadding(
-                new Insets(
-                        18,
-                        25,
-                        18,
-                        25
-                )
-        );
-
-        topBar.getStyleClass().add(
-                "top-bar"
-        );
-
-
-        Label pageTitle =
-                new Label(
-                        "Participant Management"
-                );
-
-        pageTitle.getStyleClass().add(
-                "page-title"
-        );
-
-
-        Region spacer =
-                new Region();
-
-        HBox.setHgrow(
-                spacer,
-                Priority.ALWAYS
-        );
-
-
-        Label userIcon =
-                new Label("●");
-
-        Label userName =
-                new Label("Admin");
-
-        userName.getStyleClass().add(
-                "user-name"
-        );
-
-
-        HBox userBox =
-                new HBox(
-                        8,
-                        userIcon,
-                        userName
-                );
-
-        userBox.setAlignment(
-                Pos.CENTER
-        );
-
-
-        topBar.getChildren().addAll(
-                pageTitle,
-                spacer,
-                userBox
-        );
-
-        return topBar;
-    }
-
 
     // =========================================================
     // HEADING
@@ -411,7 +162,6 @@ public class ParticipantController {
                 "welcome-title"
         );
 
-
         Label subtitle =
                 new Label(
                         "Manage registrations and payment status for "
@@ -422,7 +172,6 @@ public class ParticipantController {
                 "welcome-subtitle"
         );
 
-
         box.getChildren().addAll(
                 title,
                 subtitle
@@ -430,7 +179,6 @@ public class ParticipantController {
 
         return box;
     }
-
 
     // =========================================================
     // STATISTICS
@@ -441,15 +189,13 @@ public class ParticipantController {
         HBox statistics =
                 new HBox(18);
 
-
         VBox totalCard =
                 createStatCard(
-                        "♙",
+                        "P",
                         "Total Participants",
                         totalParticipantsLabel,
                         "stat-card-blue"
                 );
-
 
         VBox paidCard =
                 createStatCard(
@@ -459,15 +205,13 @@ public class ParticipantController {
                         "stat-card-green"
                 );
 
-
         VBox waitingCard =
                 createStatCard(
-                        "◷",
+                        "W",
                         "Waiting",
                         waitingParticipantsLabel,
                         "stat-card-purple"
                 );
-
 
         VBox feesCard =
                 createStatCard(
@@ -476,7 +220,6 @@ public class ParticipantController {
                         totalFeesLabel,
                         "stat-card-yellow"
                 );
-
 
         HBox.setHgrow(
                 totalCard,
@@ -498,7 +241,6 @@ public class ParticipantController {
                 Priority.ALWAYS
         );
 
-
         statistics.getChildren().addAll(
                 totalCard,
                 paidCard,
@@ -508,7 +250,6 @@ public class ParticipantController {
 
         return statistics;
     }
-
 
     private VBox createStatCard(
             String icon,
@@ -530,14 +271,12 @@ public class ParticipantController {
                 styleClass
         );
 
-
         Label iconLabel =
                 new Label(icon);
 
         iconLabel.getStyleClass().add(
                 "stat-icon"
         );
-
 
         Label titleLabel =
                 new Label(title);
@@ -546,11 +285,9 @@ public class ParticipantController {
                 "stat-title"
         );
 
-
         value.getStyleClass().add(
                 "stat-value"
         );
-
 
         card.getChildren().addAll(
                 iconLabel,
@@ -561,7 +298,6 @@ public class ParticipantController {
         return card;
     }
 
-
     // =========================================================
     // PARTICIPANTS SECTION
     // =========================================================
@@ -570,7 +306,6 @@ public class ParticipantController {
 
         VBox section =
                 new VBox(12);
-
 
         HBox headingRow =
                 new HBox();
@@ -584,7 +319,6 @@ public class ParticipantController {
                 "section-title"
         );
 
-
         Region spacer =
                 new Region();
 
@@ -593,10 +327,9 @@ public class ParticipantController {
                 Priority.ALWAYS
         );
 
-
         Button refreshButton =
                 new Button(
-                        "↻  Refresh"
+                        "Refresh"
                 );
 
         refreshButton.getStyleClass().add(
@@ -607,27 +340,47 @@ public class ParticipantController {
                 e -> loadParticipants()
         );
 
-
         headingRow.getChildren().addAll(
                 title,
                 spacer,
                 refreshButton
         );
 
+        searchParticipantsField.setPromptText(
+                "Search name, department or register number...");
+        searchParticipantsField.getStyleClass().add("modern-text-field");
+        searchParticipantsField.setPrefHeight(40);
+        HBox.setHgrow(searchParticipantsField, Priority.ALWAYS);
+
+        participantStatusFilter.setValue("All statuses");
+        participantStatusFilter.setMaxWidth(160);
+        participantStatusFilter.getStyleClass().add("modern-text-field");
+
+        Button clearFilters = new Button("Clear");
+        clearFilters.getStyleClass().add("secondary-button");
+        clearFilters.setOnAction(e -> {
+            searchParticipantsField.clear();
+            participantStatusFilter.setValue("All statuses");
+            applyParticipantFilters();
+        });
+
+        searchParticipantsField.textProperty().addListener(
+                (obs, oldValue, newValue) -> applyParticipantFilters());
+        participantStatusFilter.valueProperty().addListener(
+                (obs, oldValue, newValue) -> applyParticipantFilters());
+
+        HBox filters = new HBox(10,
+                searchParticipantsField, participantStatusFilter, clearFilters);
+        filters.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         section.getChildren().addAll(
                 headingRow,
+                filters,
                 table
-        );
-
-        VBox.setVgrow(
-                table,
-                Priority.ALWAYS
         );
 
         return section;
     }
-
 
     // =========================================================
     // REGISTRATION FORM
@@ -642,7 +395,6 @@ public class ParticipantController {
                 "event-form-card"
         );
 
-
         Label title =
                 new Label(
                         "Register Participant"
@@ -652,12 +404,12 @@ public class ParticipantController {
                 "form-section-title"
         );
 
-
-        // First row
+        // -----------------------------------------------------
+        // FIRST ROW
+        // -----------------------------------------------------
 
         HBox row1 =
                 new HBox(15);
-
 
         VBox nameBox =
                 createField(
@@ -666,7 +418,6 @@ public class ParticipantController {
                         "e.g. K. Subish Kumar"
                 );
 
-
         VBox registerBox =
                 createField(
                         "Register Number",
@@ -674,14 +425,12 @@ public class ParticipantController {
                         "e.g. 9925051036"
                 );
 
-
         VBox departmentBox =
                 createField(
                         "Department",
                         department,
                         "e.g. B.Tech AI & DS"
                 );
-
 
         HBox.setHgrow(
                 nameBox,
@@ -698,19 +447,18 @@ public class ParticipantController {
                 Priority.ALWAYS
         );
 
-
         row1.getChildren().addAll(
                 nameBox,
                 registerBox,
                 departmentBox
         );
 
-
-        // Second row
+        // -----------------------------------------------------
+        // SECOND ROW
+        // -----------------------------------------------------
 
         HBox row2 =
                 new HBox(15);
-
 
         VBox yearBox =
                 createField(
@@ -719,7 +467,6 @@ public class ParticipantController {
                         "e.g. 2"
                 );
 
-
         VBox feeBox =
                 createField(
                         "Registration Fee",
@@ -727,18 +474,17 @@ public class ParticipantController {
                         "e.g. 500"
                 );
 
-
         VBox statusBox =
                 new VBox(6);
 
-
         Label statusLabel =
-                new Label("Payment Status");
+                new Label(
+                        "Payment Status"
+                );
 
         statusLabel.getStyleClass().add(
                 "field-label"
         );
-
 
         status.setMaxWidth(
                 Double.MAX_VALUE
@@ -750,25 +496,19 @@ public class ParticipantController {
                 "modern-text-field"
         );
 
-
-        status.getItems().clear();
-
-        status.getItems().addAll(
+        status.getItems().setAll(
                 "Paid",
                 "Waiting"
         );
-
 
         if (status.getValue() == null) {
             status.setValue("Paid");
         }
 
-
         statusBox.getChildren().addAll(
                 statusLabel,
                 status
         );
-
 
         HBox.setHgrow(
                 yearBox,
@@ -785,19 +525,18 @@ public class ParticipantController {
                 Priority.ALWAYS
         );
 
-
         row2.getChildren().addAll(
                 yearBox,
                 feeBox,
                 statusBox
         );
 
-
-        // Buttons
+        // -----------------------------------------------------
+        // BUTTONS
+        // -----------------------------------------------------
 
         HBox buttons =
                 new HBox(10);
-
 
         Button addButton =
                 new Button(
@@ -808,7 +547,6 @@ public class ParticipantController {
                 "primary-button"
         );
 
-
         Button deleteButton =
                 new Button(
                         "Delete Selected"
@@ -817,7 +555,6 @@ public class ParticipantController {
         deleteButton.getStyleClass().add(
                 "danger-button"
         );
-
 
         Button clearButton =
                 new Button(
@@ -828,6 +565,15 @@ public class ParticipantController {
                 "secondary-button"
         );
 
+        boolean canManage = canManageParticipants();
+        addButton.setDisable(!canManage);
+        deleteButton.setDisable(!canManage);
+        name.setDisable(!canManage);
+        department.setDisable(!canManage);
+        year.setDisable(!canManage);
+        registerNo.setDisable(!canManage);
+        status.setDisable(!canManage);
+        fee.setDisable(!canManage);
 
         addButton.setOnAction(
                 e -> addParticipant()
@@ -841,21 +587,21 @@ public class ParticipantController {
                 e -> clear()
         );
 
-
         buttons.getChildren().addAll(
                 addButton,
                 deleteButton,
                 clearButton
         );
 
+        // -----------------------------------------------------
+        // EVENT INFO
+        // -----------------------------------------------------
 
         Separator separator =
                 new Separator();
 
-
         HBox eventInfo =
                 new HBox();
-
 
         Label eventLabel =
                 new Label(
@@ -867,7 +613,6 @@ public class ParticipantController {
                 "tools-title"
         );
 
-
         Region spacer =
                 new Region();
 
@@ -876,28 +621,24 @@ public class ParticipantController {
                 Priority.ALWAYS
         );
 
-
         Button backButton =
                 new Button(
-                        "← Back to Events"
+                        "Back to Events"
                 );
 
         backButton.getStyleClass().add(
                 "secondary-button"
         );
 
-
         backButton.setOnAction(
                 e -> goBackToEvents()
         );
-
 
         eventInfo.getChildren().addAll(
                 eventLabel,
                 spacer,
                 backButton
         );
-
 
         container.getChildren().addAll(
                 title,
@@ -908,10 +649,12 @@ public class ParticipantController {
                 eventInfo
         );
 
-
         return container;
     }
 
+    // =========================================================
+    // FIELD
+    // =========================================================
 
     private VBox createField(
             String labelText,
@@ -921,7 +664,6 @@ public class ParticipantController {
         VBox box =
                 new VBox(6);
 
-
         Label label =
                 new Label(labelText);
 
@@ -929,15 +671,15 @@ public class ParticipantController {
                 "field-label"
         );
 
-
-        field.setPromptText(prompt);
+        field.setPromptText(
+                prompt
+        );
 
         field.setPrefHeight(40);
 
         field.getStyleClass().add(
                 "modern-text-field"
         );
-
 
         box.getChildren().addAll(
                 label,
@@ -947,7 +689,6 @@ public class ParticipantController {
         return box;
     }
 
-
     // =========================================================
     // TABLE
     // =========================================================
@@ -956,11 +697,11 @@ public class ParticipantController {
 
         table.getColumns().clear();
 
-
         TableColumn<Participant, String>
                 nameColumn =
-                new TableColumn<>("Student");
-
+                new TableColumn<>(
+                        "Student"
+                );
 
         nameColumn.setCellValueFactory(
                 data ->
@@ -970,11 +711,11 @@ public class ParticipantController {
                         )
         );
 
-
         TableColumn<Participant, String>
                 deptColumn =
-                new TableColumn<>("Department");
-
+                new TableColumn<>(
+                        "Department"
+                );
 
         deptColumn.setCellValueFactory(
                 data ->
@@ -984,11 +725,11 @@ public class ParticipantController {
                         )
         );
 
-
         TableColumn<Participant, String>
                 yearColumn =
-                new TableColumn<>("Year");
-
+                new TableColumn<>(
+                        "Year"
+                );
 
         yearColumn.setCellValueFactory(
                 data ->
@@ -1000,11 +741,11 @@ public class ParticipantController {
                         )
         );
 
-
         TableColumn<Participant, String>
                 regColumn =
-                new TableColumn<>("Register No.");
-
+                new TableColumn<>(
+                        "Register No."
+                );
 
         regColumn.setCellValueFactory(
                 data ->
@@ -1014,11 +755,11 @@ public class ParticipantController {
                         )
         );
 
-
         TableColumn<Participant, String>
                 statusColumn =
-                new TableColumn<>("Status");
-
+                new TableColumn<>(
+                        "Status"
+                );
 
         statusColumn.setCellValueFactory(
                 data ->
@@ -1028,11 +769,11 @@ public class ParticipantController {
                         )
         );
 
-
         TableColumn<Participant, String>
                 feeColumn =
-                new TableColumn<>("Fee");
-
+                new TableColumn<>(
+                        "Fee"
+                );
 
         feeColumn.setCellValueFactory(
                 data ->
@@ -1045,7 +786,6 @@ public class ParticipantController {
                         )
         );
 
-
         table.getColumns().addAll(
                 nameColumn,
                 deptColumn,
@@ -1055,66 +795,66 @@ public class ParticipantController {
                 feeColumn
         );
 
-
         table.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS
         );
 
-
         table.setPrefHeight(300);
-
 
         table.getStyleClass().add(
                 "modern-table"
         );
-
-
-        // Select participant
 
         table.getSelectionModel()
                 .selectedItemProperty()
                 .addListener(
                         (obs, oldValue, selected) -> {
 
-                            if (selected != null) {
-
-                                name.setText(
-                                        selected.getStudentName()
-                                );
-
-                                department.setText(
-                                        selected.getDepartment()
-                                );
-
-                                year.setText(
-                                        String.valueOf(
-                                                selected.getYear()
-                                        )
-                                );
-
-                                registerNo.setText(
-                                        selected.getRegisterNo()
-                                );
-
-                                status.setValue(
-                                        selected.getStatus()
-                                );
-
-                                fee.setText(
-                                        String.valueOf(
-                                                selected.getFee()
-                                ));
+                            if (selected == null) {
+                                return;
                             }
+
+                            name.setText(
+                                    selected.getStudentName()
+                            );
+
+                            department.setText(
+                                    selected.getDepartment()
+                            );
+
+                            year.setText(
+                                    String.valueOf(
+                                            selected.getYear()
+                                    )
+                            );
+
+                            registerNo.setText(
+                                    selected.getRegisterNo()
+                            );
+
+                            status.setValue(
+                                    selected.getStatus()
+                            );
+
+                            fee.setText(
+                                    String.valueOf(
+                                            selected.getFee()
+                                    )
+                            );
                         }
                 );
     }
-
 
     // =========================================================
     // ADD PARTICIPANT
     // =========================================================
 
     private void addParticipant() {
+
+        if (!canManageParticipants()) {
+            showMessage("Access denied: you cannot manage participants.");
+            return;
+        }
 
         try {
 
@@ -1127,7 +867,6 @@ public class ParticipantController {
                 return;
             }
 
-
             if (department.getText().isBlank()) {
 
                 showMessage(
@@ -1136,7 +875,6 @@ public class ParticipantController {
 
                 return;
             }
-
 
             if (year.getText().isBlank()) {
 
@@ -1147,7 +885,6 @@ public class ParticipantController {
                 return;
             }
 
-
             if (registerNo.getText().isBlank()) {
 
                 showMessage(
@@ -1157,7 +894,6 @@ public class ParticipantController {
                 return;
             }
 
-
             if (fee.getText().isBlank()) {
 
                 showMessage(
@@ -1166,7 +902,6 @@ public class ParticipantController {
 
                 return;
             }
-
 
             Participant participant =
                     new Participant(
@@ -1183,28 +918,23 @@ public class ParticipantController {
                             )
                     );
 
-
             service.registerParticipant(
                     participant
             );
-
 
             clear();
 
             loadParticipants();
 
-
             showMessage(
                     "Participant registered successfully."
             );
-
 
         } catch (NumberFormatException e) {
 
             showMessage(
                     "Year and fee must contain valid numbers."
             );
-
 
         } catch (Exception e) {
 
@@ -1214,17 +944,20 @@ public class ParticipantController {
         }
     }
 
-
     // =========================================================
     // DELETE PARTICIPANT
     // =========================================================
 
     private void deleteParticipant() {
 
+        if (!canManageParticipants()) {
+            showMessage("Access denied: you cannot manage participants.");
+            return;
+        }
+
         Participant selected =
                 table.getSelectionModel()
                         .getSelectedItem();
-
 
         if (selected == null) {
 
@@ -1235,17 +968,14 @@ public class ParticipantController {
             return;
         }
 
-
         Alert confirmation =
                 new Alert(
                         Alert.AlertType.CONFIRMATION
                 );
 
-
         confirmation.setTitle(
                 "Delete Participant"
         );
-
 
         confirmation.setHeaderText(
                 "Delete "
@@ -1253,23 +983,20 @@ public class ParticipantController {
                         + "?"
         );
 
-
         confirmation.setContentText(
                 "This action cannot be undone."
         );
 
-
         ButtonType result =
-                confirmation.showAndWait()
+                confirmation
+                        .showAndWait()
                         .orElse(
                                 ButtonType.CANCEL
                         );
 
-
         if (result != ButtonType.OK) {
             return;
         }
-
 
         try {
 
@@ -1277,16 +1004,13 @@ public class ParticipantController {
                     selected.getId()
             );
 
-
             clear();
 
             loadParticipants();
 
-
             showMessage(
                     "Participant deleted successfully."
             );
-
 
         } catch (Exception e) {
 
@@ -1295,7 +1019,6 @@ public class ParticipantController {
             );
         }
     }
-
 
     // =========================================================
     // LOAD PARTICIPANTS
@@ -1310,16 +1033,12 @@ public class ParticipantController {
                             event.getId()
                     );
 
+            allParticipants.setAll(participants);
+            table.setItems(filteredParticipants);
+            applyParticipantFilters();
 
-            table.getItems().setAll(
-                    participants
-            );
-
-
-            updateStatistics(
-                    participants
-            );
-
+            // Keep dashboard cards based on every participant.
+            updateStatistics(participants);
 
         } catch (Exception e) {
 
@@ -1329,22 +1048,51 @@ public class ParticipantController {
         }
     }
 
+    private void applyParticipantFilters() {
+        String query = searchParticipantsField.getText() == null
+                ? "" : searchParticipantsField.getText().trim().toLowerCase();
+        String selectedStatus = participantStatusFilter.getValue();
+
+        filteredParticipants.setPredicate(participant -> {
+            String studentName = participant.getStudentName() == null
+                    ? "" : participant.getStudentName().toLowerCase();
+            String departmentValue = participant.getDepartment() == null
+                    ? "" : participant.getDepartment().toLowerCase();
+            String yearValue = String.valueOf(participant.getYear());
+            String registerValue = participant.getRegisterNo() == null
+                    ? "" : participant.getRegisterNo().toLowerCase();
+            String statusValue = participant.getStatus() == null
+                    ? "" : participant.getStatus();
+
+            boolean matchesText = query.isEmpty()
+                    || studentName.contains(query)
+                    || departmentValue.contains(query)
+                    || yearValue.contains(query)
+                    || registerValue.contains(query);
+
+            boolean matchesStatus = selectedStatus == null
+                    || selectedStatus.equals("All statuses")
+                    || statusValue.equalsIgnoreCase(selectedStatus);
+
+            return matchesText && matchesStatus;
+        });
+    }
 
     // =========================================================
-    // STATISTICS UPDATE
+    // UPDATE STATISTICS
     // =========================================================
 
     private void updateStatistics(
             List<Participant> participants) {
 
-        int total = participants.size();
+        int total =
+                participants.size();
 
         int paid = 0;
 
         int waiting = 0;
 
         double totalFees = 0;
-
 
         for (Participant participant :
                 participants) {
@@ -1359,26 +1107,21 @@ public class ParticipantController {
                 waiting++;
             }
 
-
             totalFees +=
                     participant.getFee();
         }
-
 
         totalParticipantsLabel.setText(
                 String.valueOf(total)
         );
 
-
         paidParticipantsLabel.setText(
                 String.valueOf(paid)
         );
 
-
         waitingParticipantsLabel.setText(
                 String.valueOf(waiting)
         );
-
 
         totalFeesLabel.setText(
                 String.format(
@@ -1388,9 +1131,8 @@ public class ParticipantController {
         );
     }
 
-
     // =========================================================
-    // CLEAR FORM
+    // CLEAR
     // =========================================================
 
     private void clear() {
@@ -1405,12 +1147,13 @@ public class ParticipantController {
 
         fee.clear();
 
-        status.setValue("Paid");
+        status.setValue(
+                "Paid"
+        );
 
         table.getSelectionModel()
                 .clearSelection();
     }
-
 
     // =========================================================
     // BACK TO EVENTS
@@ -1418,44 +1161,18 @@ public class ParticipantController {
 
     private void goBackToEvents() {
 
-        EventController controller =
-                new EventController(stage);
-
-
-        Scene scene =
-                new Scene(
-                        controller.createView(),
-                        1100,
-                        700
-                );
-
-
-        applyStyles(scene);
-
-
-        stage.setScene(scene);
+        navigationManager.showEvents();
     }
 
-
     // =========================================================
-    // CSS
+    // AUTHORIZATION
     // =========================================================
 
-    private void applyStyles(Scene scene) {
-
-        String css =
-                getClass()
-                        .getResource(
-                                "/css/app.css"
-                        )
-                        .toExternalForm();
-
-
-        scene.getStylesheets().add(
-                css
+    private boolean canManageParticipants() {
+        return Authorization.canManageParticipants(
+                navigationManager.getCurrentUser()
         );
     }
-
 
     // =========================================================
     // MESSAGE
@@ -1469,21 +1186,17 @@ public class ParticipantController {
                         Alert.AlertType.INFORMATION
                 );
 
-
         alert.setTitle(
                 "ClubEvent Manager"
         );
-
 
         alert.setHeaderText(
                 null
         );
 
-
         alert.setContentText(
                 message
         );
-
 
         alert.showAndWait();
     }

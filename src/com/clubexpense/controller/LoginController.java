@@ -1,274 +1,280 @@
+
 package com.clubexpense.controller;
+
+import com.clubexpense.dao.UserDAO;
+import com.clubexpense.model.User;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.shape.Circle;
+import javafx.scene.layout.StackPane;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.security.GeneralSecurityException;
+import java.sql.SQLException;
+import java.util.Arrays;
 
 public class LoginController {
 
-    private final javafx.stage.Stage stage;
+    private final Stage stage;
+    private final UserDAO userDAO = new UserDAO();
 
-    public LoginController(javafx.stage.Stage stage) {
+    public LoginController(Stage stage) {
         this.stage = stage;
     }
 
+    // =========================================================
+    // LOGIN VIEW
+    // =========================================================
+
     public Parent createView() {
 
-        // =========================================================
-        // MAIN CONTAINER
-        // =========================================================
-
-        BorderPane root = new BorderPane();
+        HBox root = new HBox();
         root.getStyleClass().add("login-root");
 
-
-        // =========================================================
         // LEFT BRANDING PANEL
-        // =========================================================
 
-        VBox brandPanel = new VBox(22);
-        brandPanel.setPadding(new Insets(55));
-        brandPanel.setAlignment(Pos.CENTER_LEFT);
-        brandPanel.getStyleClass().add("login-brand");
-
-        // Logo
-        StackPane logoBox = new StackPane();
-
-        Label logo = new Label("CE");
-        logo.getStyleClass().add("login-logo");
-
-        logoBox.getChildren().add(logo);
-        logoBox.getStyleClass().add("logo-box");
-
-
-        // Application name
-        Label brandTitle = new Label(
-                "ClubEvent\n& Finance Manager"
+        VBox brandingPanel = new VBox(18);
+        brandingPanel.setPrefWidth(430);
+        brandingPanel.setPadding(
+                new Insets(55, 45, 45, 45)
         );
-        brandTitle.getStyleClass().add("brand-title");
+        brandingPanel.setAlignment(Pos.CENTER_LEFT);
+        brandingPanel.getStyleClass().add("login-brand-panel");
 
+        Label brand = new Label("CLUBHUB");
+        brand.getStyleClass().add("login-brand");
 
-        // Description
-        Label brandDescription = new Label(
-                "Plan events. Manage participants.\n" +
-                "Track expenses. Settle payments."
+        Label brandLine = new Label(
+                "EVENT & FINANCE\nMANAGEMENT"
         );
-        brandDescription.getStyleClass().add("brand-description");
+        brandLine.getStyleClass().add("login-brand-title");
 
-
-        // Feature list
-        VBox features = new VBox(14);
-        features.getStyleClass().add("feature-list");
-
-        features.getChildren().addAll(
-                createFeature("Events", "Create and manage club events"),
-                createFeature("Participants", "Track registrations and payments"),
-                createFeature("Expenses", "Monitor every event expense"),
-                createFeature("Settlement", "Calculate fair reimbursements")
+        Label description = new Label(
+                "A modern campus platform for managing\n"
+                + "events, registrations, income and expenses."
         );
-
-
-        // University
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        description.setWrapText(true);
+        description.getStyleClass().add(
+                "login-brand-description"
+        );
 
         Label university = new Label(
-                "Kalasalingam Academy of Research and Education"
+                " "
         );
-        university.getStyleClass().add("university-label");
+        university.setWrapText(true);
+        university.getStyleClass().add("login-university");
 
+        VBox.setVgrow(description, Priority.ALWAYS);
 
-        brandPanel.getChildren().addAll(
-                logoBox,
-                brandTitle,
-                brandDescription,
-                features,
-                spacer,
+        brandingPanel.getChildren().addAll(
+                brand,
+                brandLine,
+                description,
                 university
         );
 
+        // RIGHT LOGIN PANEL — Aurora gradient canvas with a glass login card.
 
-        // =========================================================
-        // RIGHT LOGIN PANEL
-        // =========================================================
+        StackPane loginPanel = new StackPane();
+        loginPanel.setPadding(new Insets(34));
+        loginPanel.getStyleClass().add("login-panel");
+        HBox.setHgrow(loginPanel, Priority.ALWAYS);
 
-        StackPane loginArea = new StackPane();
-        loginArea.getStyleClass().add("login-area");
+        Circle orbOne = new Circle(155);
+        orbOne.getStyleClass().addAll("login-orb", "login-orb-violet");
+        StackPane.setAlignment(orbOne, Pos.TOP_RIGHT);
+        javafx.scene.layout.StackPane.setMargin(orbOne, new Insets(34, 20, 0, 0));
 
+        Circle orbTwo = new Circle(112);
+        orbTwo.getStyleClass().addAll("login-orb", "login-orb-mint");
+        StackPane.setAlignment(orbTwo, Pos.BOTTOM_LEFT);
+        javafx.scene.layout.StackPane.setMargin(orbTwo, new Insets(0, 0, 35, 20));
 
-        VBox loginCard = new VBox(18);
-        loginCard.setPadding(new Insets(42));
-        loginCard.setMaxWidth(440);
-        loginCard.getStyleClass().add("login-card");
+        VBox loginCard = new VBox(17);
+        loginCard.setAlignment(Pos.CENTER_LEFT);
+        loginCard.setPadding(new Insets(38, 42, 36, 42));
+        loginCard.setMaxWidth(470);
+        loginCard.getStyleClass().add("login-glass-card");
 
-
-        // Heading
-        Label welcome = new Label("Welcome Back");
+        Label welcome = new Label("Welcome back");
         welcome.getStyleClass().add("login-title");
 
-
-        Label loginSubtitle = new Label(
-                "Sign in to manage your club activities"
+        Label subtitle = new Label(
+                "Sign in to manage your campus events"
         );
-        loginSubtitle.getStyleClass().add("login-subtitle");
-
-
-        // =========================================================
-        // USERNAME
-        // =========================================================
+        subtitle.getStyleClass().add("login-subtitle");
+        subtitle.setWrapText(true);
 
         Label usernameLabel = new Label("Username");
-        usernameLabel.getStyleClass().add("input-label");
+        usernameLabel.getStyleClass().add("login-field-label");
 
         TextField username = new TextField();
         username.setPromptText("Enter your username");
         username.setMaxWidth(Double.MAX_VALUE);
+        username.setPrefHeight(44);
         username.getStyleClass().add("login-field");
 
-
-        // =========================================================
-        // PASSWORD
-        // =========================================================
-
         Label passwordLabel = new Label("Password");
-        passwordLabel.getStyleClass().add("input-label");
+        passwordLabel.getStyleClass().add("login-field-label");
 
         PasswordField password = new PasswordField();
         password.setPromptText("Enter your password");
         password.setMaxWidth(Double.MAX_VALUE);
+        password.setPrefHeight(44);
         password.getStyleClass().add("login-field");
-
-
-        // =========================================================
-        // LOGIN BUTTON
-        // =========================================================
 
         Button loginButton = new Button("Sign In");
         loginButton.setMaxWidth(Double.MAX_VALUE);
+        loginButton.setPrefHeight(46);
         loginButton.setDefaultButton(true);
         loginButton.getStyleClass().add("login-button");
 
-
-        // =========================================================
-        // MESSAGE
-        // =========================================================
-
         Label message = new Label();
-        message.getStyleClass().add("login-message");
         message.setWrapText(true);
+        message.getStyleClass().add("login-message");
 
+        // LOGIN ACTION
 
-        // =========================================================
-        // LOGIN LOGIC
-        // =========================================================
+        loginButton.setOnAction(e -> {
 
-        loginButton.setOnAction(event -> {
+            String enteredUsername = username.getText().trim();
+            char[] enteredPassword =
+                    password.getText().toCharArray();
 
-            if ("admin".equals(username.getText())
-                    && "admin123".equals(password.getText())) {
+            message.setText("");
 
-                DashboardController controller =new DashboardController(stage);
-                Scene dashboardScene =new Scene(controller.createView(),1200,750);
-                String css =getClass().getResource("/css/app.css")
-                .toExternalForm();
-                
-                dashboardScene.getStylesheets().add(css);
-                stage.setScene(dashboardScene);
-
-            } else {
+            if (enteredUsername.isBlank()
+                    || enteredPassword.length == 0) {
 
                 message.setText(
-                        "Invalid username or password."
+                        "Please enter your username and password."
+                );
+                Arrays.fill(enteredPassword, '\0');
+                return;
+            }
+
+            loginButton.setDisable(true);
+            loginButton.setText("Signing in...");
+
+            try {
+                User user = userDAO.authenticate(
+                        enteredUsername,
+                        enteredPassword
                 );
 
-                message.getStyleClass().remove("success-message");
-
-                if (!message.getStyleClass()
-                        .contains("error-message")) {
-
-                    message.getStyleClass()
-                            .add("error-message");
+                if (user != null) {
+                    // Authentication succeeded.
+                    // Role-specific permissions will be added next.
+                    openApplication(user);
+                } else {
+                    message.setText(
+                            "Invalid username or password."
+                    );
+                    password.clear();
                 }
+
+            } catch (SQLException | GeneralSecurityException ex) {
+
+                message.setText(
+                        "Unable to sign in. Please try again."
+                );
+
+                System.err.println(
+                        "Login authentication failed:"
+                );
+                ex.printStackTrace();
+
+            } finally {
+                Arrays.fill(enteredPassword, '\0');
+                loginButton.setDisable(false);
+                loginButton.setText("Sign In");
             }
         });
 
-
-
-        // =========================================================
-        // FOOTER
-        // =========================================================
-
-        Label footer = new Label(
-                "Student Club Finance Management System"
-        );
-        footer.getStyleClass().add("login-footer");
-
-
         loginCard.getChildren().addAll(
                 welcome,
-                loginSubtitle,
-
-                new Region(),
-
+                subtitle,
                 usernameLabel,
                 username,
-
                 passwordLabel,
                 password,
-
                 loginButton,
-                message,
-
-                footer
+                message
         );
 
+        loginPanel.getChildren().addAll(orbTwo, orbOne, loginCard);
 
-        loginArea.getChildren().add(loginCard);
-
-        // Left = branding, Right = login
-        root.setLeft(brandPanel);
-        root.setCenter(loginArea);
+        root.getChildren().addAll(
+                brandingPanel,
+                loginPanel
+        );
 
         return root;
     }
 
+    
+    // =========================================================
+    // OPEN APPLICATION
+    // =========================================================
 
-    // =============================================================
-    // FEATURE COMPONENT
-    // =============================================================
+    private void openApplication(User user) {
 
-    private HBox createFeature(
-            String title,
-            String description) {
-
-        Label icon = new Label("✓");
-        icon.getStyleClass().add("feature-icon");
-
-        VBox textBox = new VBox(2);
-
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("feature-title");
-
-        Label descriptionLabel = new Label(description);
-        descriptionLabel.getStyleClass()
-                .add("feature-description");
-
-        textBox.getChildren().addAll(
-                titleLabel,
-                descriptionLabel
+        AppShell appShell = new AppShell(
+                user,
+                this::showLogin
         );
 
-        HBox feature = new HBox(12);
-        feature.setAlignment(Pos.CENTER_LEFT);
-
-        feature.getChildren().addAll(
-                icon,
-                textBox
+        Scene appScene = new Scene(
+                appShell.createView(),
+                1100,
+                700
         );
 
-        return feature;
+        String css = getClass()
+                .getResource("/css/app.css")
+                .toExternalForm();
+
+        appScene.getStylesheets().add(css);
+
+        stage.setScene(appScene);
+        stage.setMaximized(true);
+        stage.show();
     }
+
+    // =========================================================
+    // LOGOUT: RETURN TO LOGIN
+    // =========================================================
+
+    private void showLogin() {
+
+        Parent loginView = createView();
+
+        Scene loginScene = new Scene(
+                loginView,
+                1100,
+                700
+        );
+
+        String css = getClass()
+                .getResource("/css/app.css")
+                .toExternalForm();
+
+        loginScene.getStylesheets().add(css);
+
+        stage.setScene(loginScene);
+        stage.setMaximized(false);
+        stage.centerOnScreen();
+        stage.show();
+    }
+
 }

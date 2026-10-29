@@ -1,74 +1,118 @@
+
 package com.clubexpense.controller;
 
 import com.clubexpense.model.Event;
+import com.clubexpense.model.User;
+import com.clubexpense.security.Authorization;
 import com.clubexpense.service.EventService;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
 
 import java.sql.SQLException;
 import java.util.List;
 
 public class EventController {
 
-    private final Stage stage;
     private final EventService eventService;
+    private final NavigationManager navigationManager;
+    private final User user;
 
     private final TableView<Event> eventTable = new TableView<>();
+    private final TextField searchEventsField = new TextField();
+    private final ComboBox<String> eventStatusFilter =
+            new ComboBox<>(FXCollections.observableArrayList(
+                    "All statuses", "Planned", "Upcoming",
+                    "Ongoing", "Completed", "Cancelled"));
+    private final ObservableList<Event> allEvents =
+            FXCollections.observableArrayList();
+    private final FilteredList<Event> filteredEvents =
+            new FilteredList<>(allEvents, event -> true);
 
     private final TextField nameField = new TextField();
     private final TextField descriptionField = new TextField();
     private final TextField dateField = new TextField();
     private final TextField budgetField = new TextField();
+    private final TextField venueField = new TextField();
 
-    // Dashboard statistics
+    private final ComboBox<String> statusCombo =
+            new ComboBox<>(FXCollections.observableArrayList(
+                    "Planned",
+                    "Upcoming",
+                    "Ongoing",
+                    "Completed",
+                    "Cancelled"
+            ));
+
     private final Label totalEventsLabel = new Label("0");
     private final Label totalBudgetLabel = new Label("₹ 0.00");
     private final Label selectedEventLabel = new Label("None");
 
-    public EventController(Stage stage) {
-        this.stage = stage;
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public EventController(
+            NavigationManager navigationManager,
+            User user) {
+
+        if (navigationManager == null) {
+            throw new IllegalArgumentException(
+                    "Navigation manager is required.");
+        }
+
+        if (user == null) {
+            throw new IllegalArgumentException(
+                    "An authenticated user is required.");
+        }
+
+        this.navigationManager = navigationManager;
+        this.user = user;
         this.eventService = new EventService();
+
+        statusCombo.setValue("Planned");
+        statusCombo.setMaxWidth(Double.MAX_VALUE);
+        statusCombo.setPrefHeight(40);
+        statusCombo.getStyleClass().add("modern-text-field");
     }
 
-    public Parent createView() {
+    private boolean canManageEvents() {
+        return Authorization.canManageEvents(user);
+    }
 
-        BorderPane root = new BorderPane();
-        root.getStyleClass().add("app-root");
+    private boolean canManageParticipants() {
+        return Authorization.canManageParticipants(user);
+    }
 
-        // =========================
-        // LEFT SIDEBAR
-        // =========================
+    private boolean canAccessFinance() {
+        return Authorization.canManageFinances(user);
+    }
 
-        VBox sidebar = createSidebar();
+    private void showPermissionDenied() {
+        showMessage(
+                "Access denied. Your role does not have permission "
+                        + "to perform this operation.");
+    }
 
-        // =========================
-        // TOP HEADER
-        // =========================
+    // =========================================================
+    // CREATE CONTENT VIEW
+    // =========================================================
 
-        HBox topBar = createTopBar();
-
-        // =========================
-        // MAIN CONTENT
-        // =========================
+    public Parent createContentView() {
 
         VBox content = new VBox(22);
-        content.setPadding(new Insets(25));
+        content.setPadding(new Insets(25, 32, 32, 32));
         content.getStyleClass().add("main-content");
 
         VBox welcomeSection = createWelcomeSection();
-
         HBox statistics = createStatistics();
-
         VBox eventsSection = createEventsSection();
-
         VBox eventFormSection = createEventFormSection();
 
         content.getChildren().addAll(
@@ -80,182 +124,14 @@ public class EventController {
 
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(false);
+        scrollPane.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.getStyleClass().add("content-scroll");
-
-        BorderPane center = new BorderPane();
-        center.setTop(topBar);
-        center.setCenter(scrollPane);
-
-        root.setLeft(sidebar);
-        root.setCenter(center);
 
         createTable();
         loadEvents();
 
-        return root;
-    }
-
-    // =========================================================
-    // SIDEBAR
-    // =========================================================
-
-    private VBox createSidebar() {
-
-        VBox sidebar = new VBox(8);
-        sidebar.setPrefWidth(225);
-        sidebar.setPadding(new Insets(25, 15, 20, 15));
-        sidebar.getStyleClass().add("sidebar");
-
-        // Logo
-        HBox logoBox = new HBox(10);
-        logoBox.setAlignment(Pos.CENTER_LEFT);
-        logoBox.setPadding(new Insets(0, 8, 25, 8));
-
-        Label logoIcon = new Label("🎓");
-        logoIcon.getStyleClass().add("logo-icon");
-
-        Label logoText = new Label("ClubEvent");
-        logoText.getStyleClass().add("logo-text");
-
-        logoBox.getChildren().addAll(
-                logoIcon,
-                logoText
-        );
-
-        // Navigation buttons
-        Button dashboardButton = createSidebarButton(
-                "📊",
-                "Dashboard"
-        );
-
-        Button eventsButton = createSidebarButton(
-                "📅",
-                "Events"
-        );
-
-        Button participantsButton = createSidebarButton(
-                "👥",
-                "Participants"
-        );
-
-        Button expensesButton = createSidebarButton(
-                "💰",
-                "Expenses"
-        );
-
-        Button settlementButton = createSidebarButton(
-                "💳",
-                "Settlement"
-        );
-
-        eventsButton.getStyleClass().add("sidebar-button-active");
-
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-
-        Button settingsButton = createSidebarButton(
-                "⚙",
-                "Settings"
-        );
-
-        Button logoutButton = createSidebarButton(
-                "🚪",
-                "Logout"
-        );
-
-        logoutButton.setOnAction(e -> {
-
-            LoginController loginController =
-                    new LoginController(stage);
-
-            Scene scene = new Scene(
-                    loginController.createView(),
-                    700,
-                    500
-            );
-
-            applyStyles(scene);
-
-            stage.setScene(scene);
-        });
-
-        sidebar.getChildren().addAll(
-                logoBox,
-                dashboardButton,
-                eventsButton,
-                participantsButton,
-                expensesButton,
-                settlementButton,
-                spacer,
-                settingsButton,
-                logoutButton
-        );
-
-        return sidebar;
-    }
-
-    private Button createSidebarButton(
-            String icon,
-            String text
-    ) {
-
-        Button button = new Button(
-                icon + "   " + text
-        );
-
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setAlignment(Pos.CENTER_LEFT);
-        button.getStyleClass().add("sidebar-button");
-
-        return button;
-    }
-
-    // =========================================================
-    // TOP BAR
-    // =========================================================
-
-    private HBox createTopBar() {
-
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(
-                new Insets(18, 25, 18, 25)
-        );
-        topBar.getStyleClass().add("top-bar");
-
-        Label pageTitle = new Label(
-                "Event Management"
-        );
-
-        pageTitle.getStyleClass().add("page-title");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label userIcon = new Label("👤");
-
-        Label userName = new Label(
-                "Admin"
-        );
-
-        userName.getStyleClass().add("user-name");
-
-        HBox userBox = new HBox(
-                8,
-                userIcon,
-                userName
-        );
-
-        userBox.setAlignment(Pos.CENTER);
-
-        topBar.getChildren().addAll(
-                pageTitle,
-                spacer,
-                userBox
-        );
-
-        return topBar;
+        return scrollPane;
     }
 
     // =========================================================
@@ -266,22 +142,14 @@ public class EventController {
 
         VBox box = new VBox(5);
 
-        Label heading = new Label(
-                "Welcome back 👋"
-        );
-
+        Label heading = new Label("Manage Your Events");
         heading.getStyleClass().add("welcome-title");
 
         Label subtitle = new Label(
-                "Manage your club events, participants and finances from one place."
-        );
-
+                "Create, update and manage your club events from one place.");
         subtitle.getStyleClass().add("welcome-subtitle");
 
-        box.getChildren().addAll(
-                heading,
-                subtitle
-        );
+        box.getChildren().addAll(heading, subtitle);
 
         return box;
     }
@@ -295,35 +163,23 @@ public class EventController {
         HBox statistics = new HBox(18);
 
         VBox eventsCard = createStatCard(
-                "📅",
-                "Total Events",
-                totalEventsLabel,
-                "stat-card-blue"
-        );
+                "E", "Total Events",
+                totalEventsLabel, "stat-card-blue");
 
         VBox budgetCard = createStatCard(
-                "💰",
-                "Total Budget",
-                totalBudgetLabel,
-                "stat-card-green"
-        );
+                "₹", "Total Budget",
+                totalBudgetLabel, "stat-card-green");
 
         VBox selectedCard = createStatCard(
-                "📌",
-                "Selected Event",
-                selectedEventLabel,
-                "stat-card-purple"
-        );
+                "S", "Selected Event",
+                selectedEventLabel, "stat-card-purple");
 
         HBox.setHgrow(eventsCard, Priority.ALWAYS);
         HBox.setHgrow(budgetCard, Priority.ALWAYS);
         HBox.setHgrow(selectedCard, Priority.ALWAYS);
 
         statistics.getChildren().addAll(
-                eventsCard,
-                budgetCard,
-                selectedCard
-        );
+                eventsCard, budgetCard, selectedCard);
 
         return statistics;
     }
@@ -332,17 +188,12 @@ public class EventController {
             String icon,
             String title,
             Label value,
-            String styleClass
-    ) {
+            String styleClass) {
 
         VBox card = new VBox(8);
-
         card.setPadding(new Insets(18));
         card.setMinHeight(110);
-        card.getStyleClass().addAll(
-                "stat-card",
-                styleClass
-        );
+        card.getStyleClass().addAll("stat-card", styleClass);
 
         Label iconLabel = new Label(icon);
         iconLabel.getStyleClass().add("stat-icon");
@@ -353,10 +204,7 @@ public class EventController {
         value.getStyleClass().add("stat-value");
 
         card.getChildren().addAll(
-                iconLabel,
-                titleLabel,
-                value
-        );
+                iconLabel, titleLabel, value);
 
         return card;
     }
@@ -368,195 +216,194 @@ public class EventController {
     private VBox createEventsSection() {
 
         VBox section = new VBox(12);
-
         HBox headingRow = new HBox();
 
-        Label title = new Label(
-                "Your Events"
-        );
-
+        Label title = new Label("Your Events");
         title.getStyleClass().add("section-title");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button createButton = new Button(
-                "+  Create Event"
-        );
+        Button createButton = new Button("+  Create Event");
+        createButton.getStyleClass().add("primary-button");
 
-        createButton.getStyleClass().add(
-                "primary-button"
-        );
+        boolean allowed = canManageEvents();
+
+        createButton.setDisable(!allowed);
+        createButton.setVisible(allowed);
+        createButton.setManaged(allowed);
 
         createButton.setOnAction(e -> {
+            if (!canManageEvents()) {
+                showPermissionDenied();
+                return;
+            }
 
             clearForm();
-
             nameField.requestFocus();
         });
 
         headingRow.getChildren().addAll(
-                title,
-                spacer,
-                createButton
-        );
+                title, spacer, createButton);
 
-        section.getChildren().addAll(
-                headingRow,
-                eventTable
-        );
+        searchEventsField.setPromptText("Search events by name, venue or description...");
+        searchEventsField.getStyleClass().add("modern-text-field");
+        searchEventsField.setPrefHeight(40);
+        HBox.setHgrow(searchEventsField, Priority.ALWAYS);
 
-        VBox.setVgrow(eventTable, Priority.ALWAYS);
+        eventStatusFilter.setValue("All statuses");
+        eventStatusFilter.setPromptText("Status");
+        eventStatusFilter.setMaxWidth(180);
+        eventStatusFilter.getStyleClass().add("modern-text-field");
+
+        Button clearFilters = new Button("Clear");
+        clearFilters.getStyleClass().add("secondary-button");
+        clearFilters.setOnAction(e -> {
+            searchEventsField.clear();
+            eventStatusFilter.setValue("All statuses");
+            applyEventFilters();
+        });
+
+        searchEventsField.textProperty().addListener(
+                (obs, oldValue, newValue) -> applyEventFilters());
+        eventStatusFilter.valueProperty().addListener(
+                (obs, oldValue, newValue) -> applyEventFilters());
+
+        HBox filters = new HBox(10,
+                searchEventsField, eventStatusFilter, clearFilters);
+        filters.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        section.getChildren().addAll(headingRow, filters, eventTable);
 
         return section;
     }
 
     // =========================================================
-    // EVENT FORM
+    // EVENT FORM AND EVENT TOOLS
     // =========================================================
 
     private VBox createEventFormSection() {
 
         VBox container = new VBox(15);
+        container.getStyleClass().add("event-form-card");
 
-        container.getStyleClass().add(
-                "event-form-card"
-        );
+        Label title = new Label("Event Details");
+        title.getStyleClass().add("form-section-title");
 
-        Label title = new Label(
-                "Event Details"
-        );
-
-        title.getStyleClass().add(
-                "form-section-title"
-        );
-
-        // First row
+        // Row 1: name, date and budget.
         HBox row1 = new HBox(15);
 
         VBox nameBox = createField(
                 "Event Name",
                 nameField,
-                "e.g. Tech Symposium 2026"
-        );
+                "e.g. Tech Symposium 2026");
 
         VBox dateBox = createField(
                 "Event Date",
                 dateField,
-                "YYYY-MM-DD"
-        );
+                "YYYY-MM-DD");
 
         VBox budgetBox = createField(
                 "Budget",
                 budgetField,
-                "e.g. 15000"
-        );
+                "e.g. 15000");
 
         HBox.setHgrow(nameBox, Priority.ALWAYS);
         HBox.setHgrow(dateBox, Priority.ALWAYS);
         HBox.setHgrow(budgetBox, Priority.ALWAYS);
 
         row1.getChildren().addAll(
-                nameBox,
-                dateBox,
-                budgetBox
-        );
+                nameBox, dateBox, budgetBox);
 
-        // Description
+        // Row 2: venue and status.
+        HBox row2 = new HBox(15);
+
+        VBox venueBox = createField(
+                "Venue",
+                venueField,
+                "e.g. Main Auditorium");
+
+        VBox statusBox = new VBox(6);
+
+        Label statusLabel = new Label("Event Status");
+        statusLabel.getStyleClass().add("field-label");
+
+        statusBox.getChildren().addAll(
+                statusLabel, statusCombo);
+
+        HBox.setHgrow(venueBox, Priority.ALWAYS);
+        HBox.setHgrow(statusBox, Priority.ALWAYS);
+
+        row2.getChildren().addAll(venueBox, statusBox);
+
         VBox descriptionBox = createField(
                 "Description",
                 descriptionField,
-                "Enter a short description"
-        );
+                "Enter a short description");
 
-        // CRUD buttons
+        // CRUD buttons.
         HBox crudButtons = new HBox(10);
 
-        Button addButton = new Button(
-                "＋ Create Event"
-        );
+        Button addButton = new Button("＋ Create Event");
+        Button updateButton = new Button("✎ Update");
+        Button deleteButton = new Button("Delete");
 
-        Button updateButton = new Button(
-                "✎ Update"
-        );
+        addButton.getStyleClass().add("primary-button");
+        updateButton.getStyleClass().add("secondary-button");
+        deleteButton.getStyleClass().add("danger-button");
 
-        Button deleteButton = new Button(
-                "🗑 Delete"
-        );
+        boolean canEditEvents = canManageEvents();
 
-        addButton.getStyleClass().add(
-                "primary-button"
-        );
-
-        updateButton.getStyleClass().add(
-                "secondary-button"
-        );
-
-        deleteButton.getStyleClass().add(
-                "danger-button"
-        );
+        addButton.setDisable(!canEditEvents);
+        updateButton.setDisable(!canEditEvents);
+        deleteButton.setDisable(!canEditEvents);
 
         addButton.setOnAction(e -> createEvent());
         updateButton.setOnAction(e -> updateEvent());
         deleteButton.setOnAction(e -> deleteEvent());
 
         crudButtons.getChildren().addAll(
-                addButton,
-                updateButton,
-                deleteButton
-        );
+                addButton, updateButton, deleteButton);
 
         Separator separator = new Separator();
 
-        Label toolsTitle = new Label(
-                "Event Tools"
-        );
-
-        toolsTitle.getStyleClass().add(
-                "tools-title"
-        );
+        Label toolsTitle = new Label("Event Tools");
+        toolsTitle.getStyleClass().add("tools-title");
 
         HBox toolButtons = new HBox(10);
 
         Button participantsButton =
-                createToolButton(
-                        "👥",
-                        "Participants"
-                );
+                createToolButton("P", "Participants");
 
         Button expensesButton =
-                createToolButton(
-                        "💰",
-                        "Expenses"
-                );
+                createToolButton("E", "Expenses");
 
         Button settlementButton =
-                createToolButton(
-                        "💳",
-                        "Settlement"
-                );
+                createToolButton("S", "Settlement");
 
-        participantsButton.setOnAction(
-                e -> openParticipants()
-        );
+        Button incomeButton =
+                createToolButton("I", "Income");
 
-        expensesButton.setOnAction(
-                e -> openExpenses()
-        );
+        participantsButton.setDisable(!canManageParticipants());
+        expensesButton.setDisable(!canAccessFinance());
+        settlementButton.setDisable(!canAccessFinance());
+        incomeButton.setDisable(!canAccessFinance());
 
-        settlementButton.setOnAction(
-                e -> openSettlement()
-        );
+        participantsButton.setOnAction(e -> openParticipants());
+        expensesButton.setOnAction(e -> openExpenses());
+        settlementButton.setOnAction(e -> openSettlement());
+        incomeButton.setOnAction(e -> openIncome());
 
         toolButtons.getChildren().addAll(
                 participantsButton,
                 expensesButton,
-                settlementButton
-        );
+                settlementButton,
+                incomeButton);
 
         container.getChildren().addAll(
                 title,
                 row1,
+                row2,
                 descriptionBox,
                 crudButtons,
                 separator,
@@ -567,11 +414,14 @@ public class EventController {
         return container;
     }
 
+    // =========================================================
+    // TEXT FIELD
+    // =========================================================
+
     private VBox createField(
             String labelText,
             TextField field,
-            String prompt
-    ) {
+            String prompt) {
 
         VBox box = new VBox(6);
 
@@ -580,31 +430,23 @@ public class EventController {
 
         field.setPromptText(prompt);
         field.setPrefHeight(40);
+        field.getStyleClass().add("modern-text-field");
 
-        field.getStyleClass().add(
-                "modern-text-field"
-        );
-
-        box.getChildren().addAll(
-                label,
-                field
-        );
+        box.getChildren().addAll(label, field);
 
         return box;
     }
 
+    // =========================================================
+    // TOOL BUTTON
+    // =========================================================
+
     private Button createToolButton(
             String icon,
-            String text
-    ) {
+            String text) {
 
-        Button button = new Button(
-                icon + "  " + text
-        );
-
-        button.getStyleClass().add(
-                "tool-button"
-        );
+        Button button = new Button(icon + "  " + text);
+        button.getStyleClass().add("tool-button");
 
         return button;
     }
@@ -622,29 +464,35 @@ public class EventController {
 
         id.setCellValueFactory(data ->
                 new SimpleStringProperty(
-                        String.valueOf(
-                                data.getValue().getId()
-                        )
-                )
-        );
+                        String.valueOf(data.getValue().getId())));
 
         TableColumn<Event, String> name =
                 new TableColumn<>("Event");
 
         name.setCellValueFactory(data ->
                 new SimpleStringProperty(
-                        data.getValue().getName()
-                )
-        );
+                        safe(data.getValue().getName())));
 
         TableColumn<Event, String> date =
                 new TableColumn<>("Date");
 
         date.setCellValueFactory(data ->
                 new SimpleStringProperty(
-                        data.getValue().getEventDate()
-                )
-        );
+                        safe(data.getValue().getEventDate())));
+
+        TableColumn<Event, String> venue =
+                new TableColumn<>("Venue");
+
+        venue.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        safe(data.getValue().getVenue())));
+
+        TableColumn<Event, String> status =
+                new TableColumn<>("Status");
+
+        status.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        formatStatus(data.getValue().getStatus())));
 
         TableColumn<Event, String> budget =
                 new TableColumn<>("Budget");
@@ -653,234 +501,206 @@ public class EventController {
                 new SimpleStringProperty(
                         String.format(
                                 "₹ %.2f",
-                                data.getValue().getBudget()
-                        )
-                )
-        );
+                                data.getValue().getBudget())));
 
         eventTable.getColumns().addAll(
-                id,
-                name,
-                date,
-                budget
-        );
+                id, name, date, venue, status, budget);
 
         eventTable.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS
-        );
+                TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
-        eventTable.setPrefHeight(240);
-
-        eventTable.getStyleClass().add(
-                "modern-table"
-        );
+        eventTable.setPrefHeight(280);
+        eventTable.getStyleClass().add("modern-table");
 
         eventTable.getSelectionModel()
                 .selectedItemProperty()
-                .addListener(
-                        (obs, oldValue, selected) -> {
+                .addListener((obs, oldValue, selected) -> {
 
-                            if (selected != null) {
+                    if (selected == null) {
+                        return;
+                    }
 
-                                nameField.setText(
-                                        selected.getName()
-                                );
+                    nameField.setText(
+                            safe(selected.getName()));
 
-                                descriptionField.setText(
-                                        selected.getDescription()
-                                );
+                    descriptionField.setText(
+                            safe(selected.getDescription()));
 
-                                dateField.setText(
-                                        selected.getEventDate()
-                                );
+                    dateField.setText(
+                            safe(selected.getEventDate()));
 
-                                budgetField.setText(
-                                        String.valueOf(
-                                                selected.getBudget()
-                                        )
-                                );
+                    budgetField.setText(
+                            String.valueOf(selected.getBudget()));
 
-                                selectedEventLabel.setText(
-                                        selected.getName()
-                                );
-                            }
-                        }
-                );
+                    venueField.setText(
+                            safe(selected.getVenue()));
+
+                    statusCombo.setValue(
+                            formatStatus(selected.getStatus()));
+
+                    selectedEventLabel.setText(
+                            safe(selected.getName()));
+
+                    navigationManager.setSelectedEvent(selected);
+                });
     }
 
     // =========================================================
-    // CREATE
+    // CREATE EVENT
     // =========================================================
 
     private void createEvent() {
 
-        try {
+        if (!canManageEvents()) {
+            showPermissionDenied();
+            return;
+        }
 
+        try {
             if (nameField.getText().isBlank()) {
-                showMessage(
-                        "Please enter an event name."
-                );
+                showMessage("Please enter an event name.");
                 return;
             }
 
             if (dateField.getText().isBlank()) {
-                showMessage(
-                        "Please enter the event date."
-                );
+                showMessage("Please enter the event date.");
                 return;
             }
 
             if (budgetField.getText().isBlank()) {
-                showMessage(
-                        "Please enter the event budget."
-                );
+                showMessage("Please enter the event budget.");
                 return;
             }
 
             Event event = new Event(
-                    nameField.getText(),
-                    descriptionField.getText(),
-                    dateField.getText(),
-                    Double.parseDouble(
-                            budgetField.getText()
-                    )
+                    nameField.getText().trim(),
+                    descriptionField.getText().trim(),
+                    dateField.getText().trim(),
+                    Double.parseDouble(budgetField.getText().trim())
             );
+
+            event.setVenue(venueField.getText().trim());
+            event.setStatus(getSelectedStatus());
 
             eventService.createEvent(event);
 
             clearForm();
             loadEvents();
 
-            showMessage(
-                    "Event created successfully."
-            );
+            showMessage("Event created successfully.");
 
         } catch (NumberFormatException e) {
-
-            showMessage(
-                    "Budget must be a valid number."
-            );
-
+            showMessage("Budget must be a valid number.");
         } catch (Exception e) {
-
             showMessage(e.getMessage());
         }
     }
 
     // =========================================================
-    // UPDATE
+    // UPDATE EVENT
     // =========================================================
 
     private void updateEvent() {
 
+        if (!canManageEvents()) {
+            showPermissionDenied();
+            return;
+        }
+
         Event selected =
-                eventTable.getSelectionModel()
-                        .getSelectedItem();
+                eventTable.getSelectionModel().getSelectedItem();
 
         if (selected == null) {
-            showMessage(
-                    "Select an event first."
-            );
+            showMessage("Select an event first.");
             return;
         }
 
         try {
+            if (nameField.getText().isBlank()) {
+                showMessage("Please enter an event name.");
+                return;
+            }
 
-            selected.setName(
-                    nameField.getText()
-            );
+            if (dateField.getText().isBlank()) {
+                showMessage("Please enter the event date.");
+                return;
+            }
 
+            if (budgetField.getText().isBlank()) {
+                showMessage("Please enter the event budget.");
+                return;
+            }
+
+            selected.setName(nameField.getText().trim());
             selected.setDescription(
-                    descriptionField.getText()
-            );
-
-            selected.setEventDate(
-                    dateField.getText()
-            );
-
+                    descriptionField.getText().trim());
+            selected.setEventDate(dateField.getText().trim());
             selected.setBudget(
-                    Double.parseDouble(
-                            budgetField.getText()
-                    )
-            );
+                    Double.parseDouble(budgetField.getText().trim()));
+
+            selected.setVenue(venueField.getText().trim());
+            selected.setStatus(getSelectedStatus());
 
             eventService.updateEvent(selected);
 
             loadEvents();
 
-            showMessage(
-                    "Event updated successfully."
-            );
+            showMessage("Event updated successfully.");
 
         } catch (NumberFormatException e) {
-
-            showMessage(
-                    "Budget must be a valid number."
-            );
-
+            showMessage("Budget must be a valid number.");
         } catch (Exception e) {
-
             showMessage(e.getMessage());
         }
     }
 
     // =========================================================
-    // DELETE
+    // DELETE EVENT
     // =========================================================
 
     private void deleteEvent() {
 
+        if (!canManageEvents()) {
+            showPermissionDenied();
+            return;
+        }
+
         Event selected =
-                eventTable.getSelectionModel()
-                        .getSelectedItem();
+                eventTable.getSelectionModel().getSelectedItem();
 
         if (selected == null) {
-            showMessage(
-                    "Select an event first."
-            );
+            showMessage("Select an event first.");
             return;
         }
 
         Alert confirmation =
-                new Alert(
-                        Alert.AlertType.CONFIRMATION
-                );
+                new Alert(Alert.AlertType.CONFIRMATION);
 
-        confirmation.setTitle(
-                "Delete Event"
-        );
-
+        confirmation.setTitle("Delete Event");
         confirmation.setHeaderText(
-                "Delete " + selected.getName() + "?"
-        );
+                "Delete " + selected.getName() + "?");
 
         confirmation.setContentText(
-                "This action cannot be undone."
-        );
+                "This action cannot be undone.");
 
-        ButtonType result =
-                confirmation.showAndWait()
-                        .orElse(ButtonType.CANCEL);
+        ButtonType result = confirmation.showAndWait()
+                .orElse(ButtonType.CANCEL);
 
         if (result != ButtonType.OK) {
             return;
         }
 
         try {
-
-            eventService.deleteEvent(
-                    selected.getId()
-            );
+            eventService.deleteEvent(selected.getId());
 
             clearForm();
             loadEvents();
 
-            showMessage(
-                    "Event deleted successfully."
-            );
+            navigationManager.setSelectedEvent(null);
+
+            showMessage("Event deleted successfully.");
 
         } catch (SQLException e) {
-
             showMessage(e.getMessage());
         }
     }
@@ -892,19 +712,14 @@ public class EventController {
     private void loadEvents() {
 
         try {
+            List<Event> events = eventService.getAllEvents();
 
-            List<Event> events =
-                    eventService.getAllEvents();
-
-            eventTable.setItems(
-                    FXCollections.observableArrayList(
-                            events
-                    )
-            );
+            allEvents.setAll(events);
+            eventTable.setItems(filteredEvents);
+            applyEventFilters();
 
             totalEventsLabel.setText(
-                    String.valueOf(events.size())
-            );
+                    String.valueOf(events.size()));
 
             double totalBudget = 0;
 
@@ -913,64 +728,94 @@ public class EventController {
             }
 
             totalBudgetLabel.setText(
-                    String.format(
-                            "₹ %.2f",
-                            totalBudget
-                    )
-            );
+                    String.format("₹ %.2f", totalBudget));
 
         } catch (SQLException e) {
-
             showMessage(e.getMessage());
         }
     }
 
+    private void applyEventFilters() {
+        String query = searchEventsField.getText() == null
+                ? "" : searchEventsField.getText().trim().toLowerCase();
+        String selectedStatus = eventStatusFilter.getValue();
+
+        filteredEvents.setPredicate(event -> {
+            boolean matchesText = query.isEmpty()
+                    || safe(event.getName()).toLowerCase().contains(query)
+                    || safe(event.getVenue()).toLowerCase().contains(query)
+                    || safe(event.getDescription()).toLowerCase().contains(query)
+                    || safe(event.getEventDate()).toLowerCase().contains(query);
+
+            boolean matchesStatus = selectedStatus == null
+                    || selectedStatus.equals("All statuses")
+                    || safe(event.getStatus()).equalsIgnoreCase(selectedStatus);
+
+            return matchesText && matchesStatus;
+        });
+    }
+
     // =========================================================
-    // NAVIGATION
+    // STATUS HELPERS
+    // =========================================================
+
+    private String getSelectedStatus() {
+
+        String selected = statusCombo.getValue();
+
+        if (selected == null || selected.isBlank()) {
+            return "PLANNED";
+        }
+
+        return selected.trim().toUpperCase();
+    }
+
+    private String formatStatus(String status) {
+
+        if (status == null || status.isBlank()) {
+            return "Planned";
+        }
+
+        return switch (status.trim().toUpperCase()) {
+            case "PLANNED" -> "Planned";
+            case "UPCOMING" -> "Upcoming";
+            case "ONGOING" -> "Ongoing";
+            case "COMPLETED" -> "Completed";
+            case "CANCELLED" -> "Cancelled";
+            default -> status;
+        };
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    // =========================================================
+    // SELECTED EVENT
     // =========================================================
 
     private Event getSelectedEvent() {
 
         Event selected =
-                eventTable.getSelectionModel()
-                        .getSelectedItem();
+                eventTable.getSelectionModel().getSelectedItem();
 
         if (selected == null) {
-
-            showMessage(
-                    "Select an event first."
-            );
+            showMessage("Select an event first.");
         }
 
         return selected;
     }
 
+    // =========================================================
+    // OPEN PARTICIPANTS
+    // =========================================================
+
     private void openParticipants() {
 
-        Event selected = getSelectedEvent();
-
-        if (selected == null) {
+        if (!canManageParticipants()) {
+            showPermissionDenied();
             return;
         }
-
-        ParticipantController controller =
-                new ParticipantController(
-                        stage,
-                        selected
-                );
-
-        Scene scene = new Scene(
-                controller.createView(),
-                1100,
-                700
-        );
-
-        applyStyles(scene);
-
-        stage.setScene(scene);
-    }
-
-    private void openExpenses() {
 
         Event selected = getSelectedEvent();
 
@@ -978,50 +823,71 @@ public class EventController {
             return;
         }
 
-        ExpenseController controller =
-                new ExpenseController(
-                        stage,
-                        selected
-                );
-
-        Scene scene = new Scene(
-                controller.createView(),
-                1100,
-                700
-        );
-
-        applyStyles(scene);
-
-        stage.setScene(scene);
-    }
-
-    private void openSettlement() {
-
-        Event selected = getSelectedEvent();
-
-        if (selected == null) {
-            return;
-        }
-
-        SettlementController controller =
-                new SettlementController(
-                        stage,
-                        selected
-                );
-
-        Scene scene = new Scene(
-                controller.createView(),
-                900,
-                600
-        );
-
-        applyStyles(scene);
-
-        stage.setScene(scene);
+        navigationManager.showParticipants(selected);
     }
 
     // =========================================================
-    // UTILITIES
+    // OPEN EXPENSES
+    // =========================================================
+
+    private void openExpenses() {
+
+        if (!canAccessFinance()) {
+            showPermissionDenied();
+            return;
+        }
+
+        Event selected = getSelectedEvent();
+
+        if (selected == null) {
+            return;
+        }
+
+        navigationManager.showExpenses(selected);
+    }
+
+    // =========================================================
+    // OPEN SETTLEMENT
+    // =========================================================
+
+    private void openSettlement() {
+
+        if (!canAccessFinance()) {
+            showPermissionDenied();
+            return;
+        }
+
+        Event selected = getSelectedEvent();
+
+        if (selected == null) {
+            return;
+        }
+
+        navigationManager.showSettlement(selected);
+    }
+
+    // =========================================================
+    // OPEN INCOME
+    // =========================================================
+
+    private void openIncome() {
+
+        if (!canAccessFinance()) {
+            showPermissionDenied();
+            return;
+        }
+
+        Event selected = getSelectedEvent();
+
+        if (selected == null) {
+            return;
+        }
+
+        navigationManager.showIncome(selected);
+    }
+
+    // =========================================================
+    // CLEAR FORM
     // =========================================================
 
     private void clearForm() {
@@ -1030,40 +896,31 @@ public class EventController {
         descriptionField.clear();
         dateField.clear();
         budgetField.clear();
+        venueField.clear();
 
-        eventTable.getSelectionModel()
-                .clearSelection();
+        statusCombo.setValue("Planned");
 
-        selectedEventLabel.setText(
-                "None"
-        );
+        eventTable.getSelectionModel().clearSelection();
+        selectedEventLabel.setText("None");
+
+        navigationManager.setSelectedEvent(null);
     }
 
-    private void applyStyles(Scene scene) {
-
-        String css = getClass()
-                .getResource("/css/app.css")
-                .toExternalForm();
-
-        scene.getStylesheets().add(css);
-    }
+    // =========================================================
+    // MESSAGE
+    // =========================================================
 
     private void showMessage(String message) {
 
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.INFORMATION
-                );
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
 
-        alert.setTitle(
-                "ClubEvent Manager"
-        );
-
+        alert.setTitle("ClubEvent Manager");
         alert.setHeaderText(null);
 
         alert.setContentText(
-                message
-        );
+                message == null || message.isBlank()
+                        ? "An unexpected error occurred."
+                        : message);
 
         alert.showAndWait();
     }

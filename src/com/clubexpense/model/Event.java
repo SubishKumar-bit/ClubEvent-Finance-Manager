@@ -1,3 +1,4 @@
+
 package com.clubexpense.model;
 
 public class Event {
@@ -7,24 +8,60 @@ public class Event {
     private String description;
     private String eventDate;
     private double budget;
+    private String status;
+    private String venue;
 
     public Event() {
+        this.status = "PLANNED";
+        this.venue = "";
     }
 
-    public Event(String name, String description, String eventDate, double budget) {
+    public Event(
+            String name,
+            String description,
+            String eventDate,
+            double budget) {
+
         this.name = name;
         this.description = description;
         this.eventDate = eventDate;
         this.budget = budget;
+        this.status = "PLANNED";
+        this.venue = "";
     }
 
-    public Event(int id, String name, String description,
-                 String eventDate, double budget) {
+    public Event(
+            int id,
+            String name,
+            String description,
+            String eventDate,
+            double budget) {
+
         this.id = id;
         this.name = name;
         this.description = description;
         this.eventDate = eventDate;
         this.budget = budget;
+        this.status = "PLANNED";
+        this.venue = "";
+    }
+
+    public Event(
+            int id,
+            String name,
+            String description,
+            String eventDate,
+            double budget,
+            String status,
+            String venue) {
+
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.eventDate = eventDate;
+        this.budget = budget;
+        this.status = status;
+        this.venue = venue;
     }
 
     public int getId() {
@@ -65,6 +102,22 @@ public class Event {
 
     public void setBudget(double budget) {
         this.budget = budget;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public void setVenue(String venue) {
+        this.venue = venue;
     }
 
     @Override

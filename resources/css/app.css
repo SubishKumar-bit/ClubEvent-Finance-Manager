@@ -1246,3 +1246,1107 @@
     -fx-text-fill: #ffffff;
     -fx-font-size: 20px;
 }
+/* =========================================================
+   CAMPUS PULSE LOGIN
+   ========================================================= */
+
+.login-root {
+    -fx-background-color: #F8FAFC;
+}
+
+/* ---------------------------------------------------------
+   LEFT BRANDING PANEL
+   --------------------------------------------------------- */
+
+.login-brand-panel {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 0;
+}
+
+.login-brand {
+    -fx-text-fill: #38BDF8;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 2px;
+}
+
+.login-brand-title {
+    -fx-text-fill: white;
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-line-spacing: 3px;
+}
+
+.login-brand-description {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 15px;
+    -fx-line-spacing: 5px;
+}
+
+.login-university {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+/* ---------------------------------------------------------
+   RIGHT LOGIN PANEL
+   --------------------------------------------------------- */
+
+.login-panel {
+    -fx-background-color: #FFFFFF;
+}
+
+.login-title {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+}
+
+.login-subtitle {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 14px;
+    -fx-padding: 0 0 15px 0;
+}
+
+.login-field-label {
+    -fx-text-fill: #334155;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.login-field {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+    -fx-padding: 12px 14px;
+    -fx-font-size: 14px;
+    -fx-text-fill: #0F172A;
+}
+
+.login-field:focused {
+    -fx-border-color: #6366F1;
+    -fx-background-color: #FFFFFF;
+    -fx-effect: dropshadow(
+        gaussian,
+        rgba(99, 102, 241, 0.18),
+        10,
+        0.2,
+        0,
+        2
+    );
+}
+
+.login-button {
+    -fx-background-color: #6366F1;
+    -fx-background-radius: 9px;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.login-button:hover {
+    -fx-background-color: #4F46E5;
+}
+
+.login-button:pressed {
+    -fx-background-color: #4338CA;
+}
+
+.login-message {
+    -fx-text-fill: #EF4444;
+    -fx-font-size: 13px;
+}
+/* =========================================================
+   STATISTICS CARD ALIGNMENT
+   ========================================================= */
+
+.stat-card {
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+}
+
+.stat-title {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.stat-value {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+/* =========================================================
+   CAMPUS PULSE — AURORA GLASS (SHARED APPLICATION THEME)
+   Intentionally appended so this system consistently overrides
+   older one-off page styling without changing page logic.
+   ========================================================= */
+
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-background-color: #EEF1FF;
+}
+
+.app-shell {
+    -fx-background-color: linear-gradient(to bottom right, #EDF1FF, #F8F2FF 55%, #EBFAF8);
+}
+
+.app-content {
+    -fx-background-color: transparent;
+}
+
+.main-content,
+.dashboard-root,
+.dashboard-main,
+.task-page,
+.report-page {
+    -fx-background-color: linear-gradient(to bottom right, #EEF1FF 0%, #F8F3FF 55%, #ECFAF8 100%);
+}
+
+.dashboard-scroll,
+.content-scroll,
+.kanban-board-scroll,
+.kanban-lane-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.dashboard-scroll > .viewport,
+.content-scroll > .viewport,
+.kanban-board-scroll > .viewport,
+.kanban-lane-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.sidebar,
+.dashboard-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #141933 0%, #20204A 58%, #172E45 100%);
+    -fx-effect: dropshadow(gaussian, rgba(35, 33, 83, 0.20), 20, 0.16, 4, 0);
+}
+
+.logo-text,
+.sidebar-brand {
+    -fx-text-fill: #F8FAFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.sidebar-button,
+.dashboard-nav-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 12px;
+    -fx-text-fill: #BEC9E7;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 12px 14px;
+    -fx-cursor: hand;
+}
+
+.sidebar-button:hover,
+.dashboard-nav-button:hover {
+    -fx-background-color: rgba(153, 161, 255, 0.15);
+    -fx-text-fill: white;
+    -fx-translate-x: 2px;
+}
+
+.sidebar-button-active,
+.dashboard-nav-active {
+    -fx-background-color: linear-gradient(to right, #5968F4 0%, #8662E8 100%);
+    -fx-background-radius: 12px;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(102, 91, 235, 0.34), 13, 0.18, 0, 4);
+}
+
+.sidebar-button-active:hover,
+.dashboard-nav-active:hover {
+    -fx-background-color: linear-gradient(to right, #6575FF 0%, #946EF3 100%);
+    -fx-translate-x: 0;
+}
+
+.top-bar,
+.dashboard-topbar {
+    -fx-background-color: rgba(255, 255, 255, 0.90);
+    -fx-border-color: #DFE4F5;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.page-title,
+.dashboard-page-title {
+    -fx-text-fill: #20264B;
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+}
+
+.page-subtitle,
+.welcome-subtitle,
+.dashboard-page-subtitle {
+    -fx-text-fill: #7781A4;
+    -fx-font-size: 12px;
+}
+
+.user-name,
+.topbar-user {
+    -fx-text-fill: #292C55;
+    -fx-font-weight: bold;
+}
+
+.user-role,
+.topbar-role {
+    -fx-text-fill: #8B90AF;
+}
+
+.stat-card,
+.info-card,
+.active-event-card,
+.event-form-card,
+.section-card,
+.card,
+.report-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(255,255,255,0.98), rgba(250,249,255,0.94));
+    -fx-background-radius: 18px;
+    -fx-border-color: #DFE4F5;
+    -fx-border-radius: 18px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(60, 61, 124, 0.10), 18, 0.15, 0, 6);
+}
+
+.stat-card:hover,
+.info-card:hover,
+.event-form-card:hover,
+.section-card:hover,
+.card:hover,
+.report-card:hover {
+    -fx-border-color: #C8C8F8;
+    -fx-effect: dropshadow(gaussian, rgba(103, 92, 226, 0.16), 20, 0.18, 0, 7);
+    -fx-translate-y: -1px;
+}
+
+.stat-title,
+.stat-description,
+.info-card-description {
+    -fx-text-fill: #7B83A3;
+}
+
+.stat-value {
+    -fx-text-fill: #22274C;
+    -fx-font-weight: bold;
+}
+
+.event-preview {
+    -fx-background-color: linear-gradient(to bottom right, #F5F4FF, #F0F8FF);
+    -fx-background-radius: 14px;
+    -fx-border-color: #E3E4FA;
+    -fx-border-radius: 14px;
+}
+
+.section-title,
+.form-section-title,
+.welcome-title {
+    -fx-text-fill: #262A50;
+}
+
+/* Common controls: consistent across Events, Participants, Expenses,
+   Settlement, Tasks, Reports and income management. */
+TextField,
+PasswordField,
+TextArea,
+ComboBox,
+DatePicker,
+.aurora-input,
+.aurora-combo,
+.aurora-date-picker {
+    -fx-background-color: #F8F8FF;
+    -fx-background-radius: 11px;
+    -fx-border-color: #DDE1F3;
+    -fx-border-radius: 11px;
+    -fx-border-width: 1px;
+    -fx-text-fill: #2D3156;
+    -fx-prompt-text-fill: #A1A6BE;
+    -fx-font-size: 12px;
+}
+
+TextField,
+PasswordField,
+.aurora-input {
+    -fx-padding: 10px 12px;
+}
+
+TextArea .content {
+    -fx-background-color: #F8F8FF;
+    -fx-background-radius: 9px;
+}
+
+TextField:hover,
+PasswordField:hover,
+TextArea:hover,
+ComboBox:hover,
+DatePicker:hover,
+.aurora-input:hover,
+.aurora-combo:hover,
+.aurora-date-picker:hover {
+    -fx-border-color: #BEBDF1;
+}
+
+TextField:focused,
+PasswordField:focused,
+TextArea:focused,
+ComboBox:focused,
+DatePicker:focused,
+.aurora-input:focused,
+.aurora-combo:focused,
+.aurora-date-picker:focused {
+    -fx-border-color: #8375F0;
+    -fx-background-color: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(123, 104, 238, 0.16), 10, 0.15, 0, 2);
+}
+
+Button {
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 10px 15px;
+}
+
+.primary-button,
+.login-button {
+    -fx-background-color: linear-gradient(to right, #5969F4 0%, #8762E8 100%);
+    -fx-background-radius: 11px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(103, 92, 226, 0.18), 11, 0.15, 0, 3);
+}
+
+.primary-button:hover,
+.login-button:hover {
+    -fx-background-color: linear-gradient(to right, #6578FF 0%, #946EF2 100%);
+    -fx-effect: dropshadow(gaussian, rgba(103, 92, 226, 0.28), 14, 0.18, 0, 4);
+    -fx-translate-y: -1px;
+}
+
+.secondary-button,
+.tool-button,
+.outline-button {
+    -fx-background-color: rgba(255, 255, 255, 0.88);
+    -fx-text-fill: #555DB7;
+    -fx-border-color: #D9DDF7;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+.secondary-button:hover,
+.tool-button:hover,
+.outline-button:hover {
+    -fx-background-color: #F0F0FF;
+    -fx-border-color: #BDBDF2;
+}
+
+.danger-button {
+    -fx-background-color: #FFF3F4;
+    -fx-text-fill: #C83F60;
+    -fx-border-color: #F5CDD6;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+.danger-button:hover {
+    -fx-background-color: #FFE6EB;
+    -fx-border-color: #E9A9B8;
+}
+
+TableView,
+.modern-table,
+.report-table {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-background-radius: 14px;
+    -fx-border-color: #DFE4F5;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+    -fx-padding: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(58, 61, 119, 0.08), 15, 0.15, 0, 5);
+}
+
+.table-view .column-header-background,
+.modern-table .column-header-background {
+    -fx-background-color: linear-gradient(to right, #F0F0FF, #F4F0FF);
+    -fx-background-radius: 12px 12px 0 0;
+}
+
+.table-view .column-header,
+.modern-table .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: #E6E5F5;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-padding: 12px 9px;
+}
+
+.table-view .column-header .label,
+.modern-table .column-header .label {
+    -fx-text-fill: #666D95;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell,
+.modern-table .table-row-cell {
+    -fx-background-color: rgba(255,255,255,0.95);
+    -fx-border-color: #F0F0F8;
+    -fx-border-width: 0 0 1px 0;
+    -fx-cell-size: 44px;
+}
+
+.table-view .table-row-cell:odd,
+.modern-table .table-row-cell:odd {
+    -fx-background-color: #FBFAFF;
+}
+
+.table-view .table-row-cell:hover,
+.modern-table .table-row-cell:hover {
+    -fx-background-color: #F1F1FF;
+}
+
+.table-view .table-row-cell:selected,
+.modern-table .table-row-cell:selected {
+    -fx-background-color: #EAE9FF;
+}
+
+.table-view .table-cell,
+.modern-table .table-cell {
+    -fx-text-fill: #3E4468;
+    -fx-font-size: 12px;
+    -fx-padding: 9px 11px;
+    -fx-border-width: 0;
+}
+
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2px;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #C5C5E7;
+    -fx-background-radius: 8px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #A4A2DA;
+}
+
+/* Login screen — a true glass card over an aurora canvas. */
+.login-root {
+    -fx-background-color: linear-gradient(to bottom right, #171A3C, #413D85 48%, #8B74D9 100%);
+}
+
+.login-brand-panel {
+    -fx-background-color: linear-gradient(to bottom right, #141831 0%, #25204F 54%, #283A59 100%);
+    -fx-background-radius: 0;
+}
+
+.login-brand {
+    -fx-background-color: linear-gradient(to right, #6B71F6, #9A6EEA);
+    -fx-background-radius: 8px;
+    -fx-padding: 5px 10px;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.login-brand-title {
+    -fx-font-size: 32px;
+    -fx-line-spacing: 4px;
+    -fx-text-fill: #FFFFFF;
+}
+
+.login-brand-description {
+    -fx-text-fill: #D2D5F2;
+    -fx-font-size: 14px;
+    -fx-line-spacing: 5px;
+}
+
+.login-panel {
+    -fx-background-color: linear-gradient(to bottom right, #EBEEFF 0%, #F9F0FF 54%, #E8FAF5 100%);
+}
+
+.login-glass-card {
+    -fx-background-color: rgba(255, 255, 255, 0.88);
+    -fx-background-radius: 26px;
+    -fx-border-color: rgba(255, 255, 255, 0.92);
+    -fx-border-width: 1.2px;
+    -fx-border-radius: 26px;
+    -fx-effect: dropshadow(gaussian, rgba(62, 54, 126, 0.19), 32, 0.18, 0, 13);
+}
+
+.login-orb-violet {
+    -fx-fill: rgba(135, 98, 232, 0.16);
+    -fx-stroke: rgba(135, 98, 232, 0.18);
+    -fx-stroke-width: 1.5px;
+}
+
+.login-orb-mint {
+    -fx-fill: rgba(85, 203, 176, 0.18);
+    -fx-stroke: rgba(85, 203, 176, 0.20);
+    -fx-stroke-width: 1.5px;
+}
+
+.login-title {
+    -fx-text-fill: #222448;
+    -fx-font-size: 29px;
+    -fx-font-weight: bold;
+}
+
+.login-subtitle {
+    -fx-text-fill: #8185A6;
+    -fx-padding: 0 0 7px 0;
+}
+
+.login-field-label {
+    -fx-text-fill: #464A70;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.login-field {
+    -fx-background-color: rgba(248, 248, 255, 0.95);
+    -fx-border-color: #DDDEF4;
+    -fx-background-radius: 11px;
+    -fx-border-radius: 11px;
+    -fx-padding: 11px 13px;
+}
+
+.login-message {
+    -fx-text-fill: #C04767;
+    -fx-font-size: 12px;
+}
+
+/* Reports receive the same card and toolbar treatment as other modules. */
+.report-page {
+    -fx-padding: 26px;
+    -fx-spacing: 16px;
+}
+
+.report-toolbar,
+.report-actions {
+    -fx-alignment: center-left;
+    -fx-spacing: 10px;
+    -fx-padding: 12px;
+    -fx-background-color: rgba(255,255,255,0.70);
+    -fx-background-radius: 14px;
+    -fx-border-color: rgba(221,224,246,0.95);
+    -fx-border-radius: 14px;
+}
+
+.report-status {
+    -fx-text-fill: #737C9F;
+    -fx-font-size: 12px;
+    -fx-padding: 8px 2px 2px 2px;
+}
+
+/* =========================================================
+   TASKS — KANBAN BOARD
+   ========================================================= */
+
+.task-page {
+    -fx-spacing: 16px;
+}
+
+.task-page-heading {
+    -fx-padding: 0 0 2px 0;
+}
+
+.task-summary-row {
+    -fx-spacing: 12px;
+}
+
+.task-summary-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(255,255,255,0.98), rgba(250,248,255,0.92));
+    -fx-background-radius: 16px;
+    -fx-border-color: #E1E3F6;
+    -fx-border-radius: 16px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(62, 61, 125, 0.08), 15, 0.14, 0, 4);
+}
+
+.task-summary-indigo { -fx-border-color: #D9DFFF; }
+.task-summary-amber { -fx-border-color: #F6E4B8; }
+.task-summary-violet { -fx-border-color: #E4D9FF; }
+.task-summary-mint { -fx-border-color: #CDEEE0; }
+
+.task-summary-icon {
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-alignment: center;
+    -fx-background-radius: 11px;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.task-summary-indigo-icon { -fx-background-color: #E8EBFF; -fx-text-fill: #5C69E8; }
+.task-summary-amber-icon { -fx-background-color: #FFF2D7; -fx-text-fill: #C98B1E; }
+.task-summary-violet-icon { -fx-background-color: #F0E9FF; -fx-text-fill: #8961DF; }
+.task-summary-mint-icon { -fx-background-color: #E2F7EE; -fx-text-fill: #299A73; }
+
+.task-summary-title {
+    -fx-text-fill: #8288A7;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.task-summary-value {
+    -fx-text-fill: #262A51;
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+}
+
+.task-summary-helper {
+    -fx-text-fill: #969CB7;
+    -fx-font-size: 10px;
+}
+
+.task-toolbar {
+    -fx-spacing: 10px;
+    -fx-alignment: center-left;
+    -fx-padding: 2px 0 2px 0;
+}
+
+.kanban-board {
+    -fx-background-color: transparent;
+}
+
+.kanban-lanes {
+    -fx-background-color: transparent;
+    -fx-padding: 1px 1px 8px 1px;
+}
+
+.kanban-lane {
+    -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.80), rgba(250,249,255,0.70));
+    -fx-background-radius: 18px;
+    -fx-border-color: #E0E3F5;
+    -fx-border-radius: 18px;
+    -fx-border-width: 1px;
+    -fx-padding: 14px 12px 10px 12px;
+}
+
+.lane-todo { -fx-border-color: #D9DFFF; }
+.lane-progress { -fx-border-color: #E4D9FF; }
+.lane-completed { -fx-border-color: #CDEEE0; }
+.lane-cancelled { -fx-border-color: #F3D5DE; }
+
+.kanban-lane-title {
+    -fx-text-fill: #34385F;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.kanban-lane-count {
+    -fx-min-width: 25px;
+    -fx-alignment: center;
+    -fx-padding: 4px 7px;
+    -fx-background-color: #E9EAFE;
+    -fx-background-radius: 20px;
+    -fx-text-fill: #6569D8;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.lane-progress .kanban-lane-count { -fx-background-color: #F0E9FF; -fx-text-fill: #895FD8; }
+.lane-completed .kanban-lane-count { -fx-background-color: #E1F7ED; -fx-text-fill: #258960; }
+.lane-cancelled .kanban-lane-count { -fx-background-color: #FFE8EF; -fx-text-fill: #B94C6A; }
+
+.kanban-lane-hint {
+    -fx-text-fill: #969BB7;
+    -fx-font-size: 10px;
+    -fx-padding: 0 0 5px 0;
+}
+
+.kanban-lane-cards {
+    -fx-background-color: transparent;
+}
+
+.kanban-lane-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.kanban-task-card {
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-background-radius: 14px;
+    -fx-border-color: #E6E7F5;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(54, 55, 111, 0.07), 11, 0.12, 0, 3);
+    -fx-cursor: hand;
+}
+
+.kanban-task-card:hover {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #BFC0F4;
+    -fx-effect: dropshadow(gaussian, rgba(111, 100, 223, 0.17), 15, 0.15, 0, 5);
+    -fx-translate-y: -2px;
+}
+
+.kanban-task-card-selected {
+    -fx-border-color: #7D78EE;
+    -fx-border-width: 1.5px;
+    -fx-background-color: #FCFBFF;
+    -fx-effect: dropshadow(gaussian, rgba(111, 100, 223, 0.21), 15, 0.15, 0, 4);
+}
+
+.task-priority-high { -fx-border-color: #F1C3D0; }
+.task-priority-medium { -fx-border-color: #F1DFB6; }
+.task-priority-low { -fx-border-color: #CDEBDD; }
+
+.kanban-task-title {
+    -fx-text-fill: #2E3157;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.kanban-task-event {
+    -fx-text-fill: #777E9F;
+    -fx-font-size: 10px;
+}
+
+.kanban-task-description {
+    -fx-text-fill: #8187A4;
+    -fx-font-size: 10px;
+}
+
+.task-chip {
+    -fx-background-radius: 20px;
+    -fx-padding: 4px 7px;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+.priority-chip-high { -fx-background-color: #FFE8EF; -fx-text-fill: #B83F61; }
+.priority-chip-medium { -fx-background-color: #FFF3D8; -fx-text-fill: #A66F10; }
+.priority-chip-low { -fx-background-color: #E1F7EC; -fx-text-fill: #23865D; }
+
+.task-id-chip {
+    -fx-background-color: #F0F0FA;
+    -fx-background-radius: 20px;
+    -fx-padding: 4px 7px;
+    -fx-text-fill: #8A8EAA;
+    -fx-font-size: 9px;
+}
+
+.task-card-meta-icon { -fx-text-fill: #8F84E4; -fx-font-size: 12px; }
+.task-card-avatar-dot { -fx-text-fill: #65BFA0; -fx-font-size: 9px; }
+.task-card-meta { -fx-text-fill: #858BA6; -fx-font-size: 10px; }
+.task-due-overdue { -fx-text-fill: #C83F60; -fx-font-weight: bold; }
+
+.kanban-empty-label {
+    -fx-background-color: rgba(255,255,255,0.65);
+    -fx-background-radius: 11px;
+    -fx-padding: 16px 8px;
+    -fx-text-fill: #A0A5BE;
+    -fx-font-size: 10px;
+    -fx-alignment: center;
+}
+
+.task-editor-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(255,255,255,0.98), rgba(249,247,255,0.98));
+    -fx-background-radius: 20px;
+    -fx-border-color: #E0E1F5;
+    -fx-border-radius: 20px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(61, 59, 124, 0.11), 20, 0.15, 0, 6);
+}
+
+.task-editor-eyebrow {
+    -fx-text-fill: #8270E9;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+.task-editor-title {
+    -fx-text-fill: #292D53;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+}
+
+.task-editor-mode,
+.task-message {
+    -fx-text-fill: #8187A5;
+    -fx-font-size: 10px;
+}
+
+.task-editor-form { -fx-spacing: 11px; }
+.task-field-group { -fx-spacing: 5px; }
+.task-editor-actions { -fx-padding: 4px 0 0 0; }
+
+.task-editor-actions .danger-button {
+    -fx-max-width: 100%;
+    -fx-pref-width: 100%;
+}
+
+.report-page > .table-view {
+    -fx-background-color: rgba(255,255,255,0.96);
+}
+
+/* =========================================================
+   TASK PAGE SCROLLING + FIXED SIDEBAR ACTIONS
+   ========================================================= */
+.task-page-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.task-page-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.task-page-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 11px;
+    -fx-padding: 2px;
+}
+
+.task-page-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: linear-gradient(to bottom, #9992F4, #77CDB5);
+    -fx-background-radius: 8px;
+}
+
+.task-page-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: linear-gradient(to bottom, #8077ED, #59BFA4);
+}
+
+.sidebar-button:disabled {
+    -fx-opacity: 0.82;
+    -fx-text-fill: #9EAAD0;
+}
+
+
+
+/* =========================================================
+   SETTLEMENT PAGE SPACING + FORM ALIGNMENT FIX
+   Keeps Settlement consistent with Campus Pulse — Aurora Glass.
+   ========================================================= */
+.settlement-section-card {
+    /* Add a real inner gutter: section headings and actions should not
+       touch the card border, and should align with its form content. */
+    -fx-padding: 22px 24px 24px 24px;
+    -fx-background-insets: 0;
+}
+
+.settlement-section-title {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #262A50;
+    -fx-padding: 0 0 2px 0;
+}
+
+.settlement-section-subtitle {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #7882A5;
+    -fx-padding: 0 0 4px 0;
+}
+
+.settlement-form-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #515A7A;
+    -fx-padding: 0 4px 0 0;
+}
+
+.settlement-selected-expense {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #596184;
+    -fx-padding: 7px 0 7px 0;
+}
+
+.settlement-payment-form {
+    -fx-padding: 4px 0 2px 0;
+}
+
+.settlement-action-row {
+    -fx-padding: 4px 0 0 0;
+    -fx-alignment: center-left;
+}
+
+.settlement-table {
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: #DFE4F5;
+    -fx-border-width: 1px;
+}
+
+.settlement-table .column-header-background {
+    -fx-background-color: linear-gradient(to right, #F0F0FF, #F6F2FF);
+    -fx-background-radius: 12px 12px 0 0;
+}
+
+.settlement-table .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: #E4E5F6;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-padding: 10px 8px;
+}
+
+.settlement-table .column-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6C7399;
+}
+
+.settlement-table .table-row-cell {
+    -fx-cell-size: 44px;
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-border-color: #EEF0FA;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.settlement-table .table-row-cell:odd {
+    -fx-background-color: rgba(247,247,255,0.98);
+}
+
+.settlement-table .table-row-cell:selected {
+    -fx-background-color: #E8E9FF;
+}
+
+.settlement-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #343B7C;
+}
+
+.settlement-table .table-cell {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #465071;
+    -fx-padding: 9px 10px;
+}
+
+/* =========================================================
+   CAMPUS PULSE — AURORA HERO HEADER
+   Shared page header for Dashboard, Events, Participants,
+   Expenses, Settlement, Tasks and Reports.
+   ========================================================= */
+.top-bar.app-topbar-hero {
+    -fx-background-color: linear-gradient(
+        to right,
+        #5655D9 0%,
+        #6658E1 46%,
+        #7C5CE7 100%
+    );
+    -fx-border-color: rgba(255, 255, 255, 0.24);
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0;
+}
+
+.hero-header-content {
+    -fx-padding: 14px 25px 14px 25px;
+    -fx-alignment: center-left;
+}
+
+.hero-page-identity {
+    -fx-alignment: center-left;
+}
+
+.hero-icon-badge {
+    -fx-background-color: rgba(255, 255, 255, 0.17);
+    -fx-background-radius: 15px;
+    -fx-border-color: rgba(255, 255, 255, 0.24);
+    -fx-border-width: 1px;
+    -fx-border-radius: 15px;
+    -fx-effect: dropshadow(gaussian, rgba(36, 31, 111, 0.12), 12, 0.12, 0, 3);
+}
+
+.hero-icon-glyph {
+    -fx-font-family: "Segoe UI Symbol";
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+    -fx-alignment: center;
+}
+
+.hero-title-block {
+    -fx-alignment: center-left;
+}
+
+.hero-page-title {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+}
+
+.hero-page-subtitle {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(249, 248, 255, 0.88);
+}
+
+.hero-profile-chip {
+    -fx-background-color: rgba(255, 255, 255, 0.14);
+    -fx-background-radius: 17px;
+    -fx-border-color: rgba(255, 255, 255, 0.22);
+    -fx-border-width: 1px;
+    -fx-border-radius: 17px;
+    -fx-padding: 7px 12px 7px 8px;
+    -fx-cursor: hand;
+    -fx-alignment: center-left;
+}
+
+.hero-profile-chip:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.22);
+    -fx-border-color: rgba(255, 255, 255, 0.36);
+    -fx-translate-y: -1px;
+    -fx-effect: dropshadow(gaussian, rgba(35, 28, 101, 0.20), 13, 0.16, 0, 4);
+}
+
+.hero-profile-avatar {
+    -fx-background-color: linear-gradient(to bottom right, #D7D7FF, #B6F0E5);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(255, 255, 255, 0.62);
+    -fx-border-radius: 50%;
+    -fx-border-width: 1px;
+    -fx-alignment: center;
+}
+
+.hero-profile-avatar-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #36316D;
+}
+
+.hero-profile-name {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+}
+
+.hero-profile-role {
+    -fx-font-size: 10px;
+    -fx-text-fill: rgba(248, 247, 255, 0.84);
+}
+
+.hero-profile-chevron {
+    -fx-font-family: "Segoe UI Symbol";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: rgba(255, 255, 255, 0.88);
+    -fx-padding: 0 0 2px 2px;
+}
+
+.hero-glow-one {
+    -fx-fill: rgba(255, 255, 255, 0.09);
+    -fx-effect: dropshadow(gaussian, rgba(220, 223, 255, 0.22), 26, 0.18, 0, 0);
+}
+
+.hero-glow-two {
+    -fx-fill: rgba(188, 164, 255, 0.20);
+    -fx-effect: dropshadow(gaussian, rgba(212, 202, 255, 0.20), 20, 0.18, 0, 0);
+}

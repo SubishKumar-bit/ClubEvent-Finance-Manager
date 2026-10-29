@@ -2,35 +2,60 @@ package com.clubexpense.controller;
 
 import com.clubexpense.model.Event;
 import com.clubexpense.model.Expense;
-import com.clubexpense.model.Participant;
 import com.clubexpense.service.ExpenseService;
-import com.clubexpense.service.ParticipantService;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
 
 import java.util.List;
 
+
+import javafx.stage.FileChooser;
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Locale;
+import java.util.UUID;
+
 public class ExpenseController {
 
-    private final Stage stage;
+    private final NavigationManager navigationManager;
     private final Event event;
 
     private final ExpenseService expenseService;
-    private final ParticipantService participantService;
 
     private final TableView<Expense> expenseTable = new TableView<>();
+    private final TextField searchExpensesField = new TextField();
+    private final ComboBox<String> expenseCategoryFilter =
+            new ComboBox<>(FXCollections.observableArrayList(
+                    "All categories", "Food", "Transport", "Materials",
+                    "Equipment", "Printing", "Other"));
+    private final ObservableList<Expense> allExpenses =
+            FXCollections.observableArrayList();
+    private final FilteredList<Expense> filteredExpenses =
+            new FilteredList<>(allExpenses, expense -> true);
 
     private final TextField descriptionField = new TextField();
     private final TextField amountField = new TextField();
-    private final ComboBox<String> payerCombo = new ComboBox<>();
+
+    /*
+     * IMPORTANT:
+     * Paid By is the actual person who paid the expense.
+     * It is NOT linked to event participants.
+     */
+    private final TextField payerField = new TextField();
+
     private final ComboBox<String> categoryCombo = new ComboBox<>();
 
     private final Label totalExpenseLabel = new Label("₹ 0.00");
@@ -40,148 +65,66 @@ public class ExpenseController {
 
     private Expense selectedExpense;
 
-    public ExpenseController(Stage stage, Event event) {
-        this.stage = stage;
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public ExpenseController(
+            NavigationManager navigationManager,
+            Event event
+    ) {
+        this.navigationManager = navigationManager;
         this.event = event;
+
         this.expenseService = new ExpenseService();
-        this.participantService = new ParticipantService();
+
+        navigationManager.setSelectedEvent(event);
     }
 
-    public Parent createView() {
+    // =========================================================
+    // MAIN CONTENT VIEW
+    // =========================================================
 
-        BorderPane root = new BorderPane();
-        root.getStyleClass().add("dashboard-root");
-
-        root.setLeft(createSidebar());
-        root.setTop(createTopBar());
+    public Parent createContentView() {
 
         VBox content = new VBox(22);
         content.setPadding(new Insets(25, 30, 30, 30));
+        content.getStyleClass().add("main-content");
 
         VBox header = createPageHeader();
         HBox statistics = createStatistics();
-
         HBox mainArea = new HBox(22);
         mainArea.setAlignment(Pos.TOP_LEFT);
 
         VBox expenseSection = createExpenseTableSection();
         VBox formSection = createExpenseForm();
 
+        // Keep the complete form accessible when the window is short.
+        // A JavaFX node must only be added to one parent at a time.
+        ScrollPane formScroll = new ScrollPane(formSection);
+        formScroll.setFitToWidth(true);
+        formScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        formScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        formScroll.setPrefWidth(330);
+        formScroll.setMinWidth(300);
+        formScroll.setMaxWidth(350);
+        formScroll.setStyle(
+                "-fx-background-color: transparent;"
+                + "-fx-background: transparent;"
+        );
+        formScroll.getStyleClass().add("expense-form-scroll");
+
         HBox.setHgrow(expenseSection, Priority.ALWAYS);
+        HBox.setHgrow(formScroll, Priority.NEVER);
+        VBox.setVgrow(mainArea, Priority.ALWAYS);
+        VBox.setVgrow(expenseSection, Priority.ALWAYS);
 
-        mainArea.getChildren().addAll(expenseSection, formSection);
+        // Add each node exactly once.
+        mainArea.getChildren().addAll(expenseSection, formScroll);
+        content.getChildren().addAll(header, statistics, mainArea);
 
-        content.getChildren().addAll(
-                header,
-                statistics,
-                mainArea
-        );
-
-        root.setCenter(content);
-
-        loadParticipants();
         loadExpenses();
-
-        return root;
-    }
-
-    // =========================================================
-    // SIDEBAR
-    // =========================================================
-
-    private VBox createSidebar() {
-
-        VBox sidebar = new VBox(10);
-        sidebar.setPrefWidth(225);
-        sidebar.setPadding(new Insets(25, 15, 20, 15));
-        sidebar.getStyleClass().add("sidebar");
-
-        Label logo = new Label("ClubEvent");
-        logo.getStyleClass().add("sidebar-logo");
-
-        Label logoSub = new Label("Finance Manager");
-        logoSub.getStyleClass().add("sidebar-subtitle");
-
-        VBox logoBox = new VBox(2, logo, logoSub);
-        logoBox.setPadding(new Insets(0, 0, 25, 10));
-
-        Button dashboard = createNavButton("Dashboard", false);
-        Button events = createNavButton("Events", false);
-        Button participants = createNavButton("Participants", false);
-        Button expenses = createNavButton("Expenses", true);
-        Button settlement = createNavButton("Settlement", false);
-
-        dashboard.setOnAction(e -> openDashboard());
-        events.setOnAction(e -> openEvents());
-        participants.setOnAction(e -> openParticipants());
-        settlement.setOnAction(e -> openSettlement());
-
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-
-        Button settings = createNavButton("Settings", false);
-        Button logout = createNavButton("Logout", false);
-
-        logout.setOnAction(e -> logout());
-
-        sidebar.getChildren().addAll(
-                logoBox,
-                dashboard,
-                events,
-                participants,
-                expenses,
-                settlement,
-                spacer,
-                settings,
-                logout
-        );
-
-        return sidebar;
-    }
-
-    private Button createNavButton(String text, boolean active) {
-
-        Button button = new Button(text);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setAlignment(Pos.CENTER_LEFT);
-        button.setPrefHeight(42);
-
-        if (active) {
-            button.getStyleClass().add("sidebar-button-active");
-        } else {
-            button.getStyleClass().add("sidebar-button");
-        }
-
-        return button;
-    }
-
-    // =========================================================
-    // TOP BAR
-    // =========================================================
-
-    private HBox createTopBar() {
-
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(18, 30, 18, 30));
-        topBar.getStyleClass().add("top-bar");
-
-        Label title = new Label("Expense Management");
-        title.getStyleClass().add("page-title");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label admin = new Label("Admin");
-        admin.getStyleClass().add("user-name");
-
-        topBar.getChildren().addAll(
-                title,
-                spacer,
-                admin
-        );
-
-        return topBar;
+        return content;
     }
 
     // =========================================================
@@ -193,14 +136,24 @@ public class ExpenseController {
         Label title = new Label(
                 "Expenses - " + event.getName()
         );
-        title.getStyleClass().add("welcome-title");
+
+        title.getStyleClass().add(
+                "welcome-title"
+        );
 
         Label subtitle = new Label(
                 "Track event expenses, payments and budget usage."
         );
-        subtitle.getStyleClass().add("welcome-subtitle");
 
-        return new VBox(5, title, subtitle);
+        subtitle.getStyleClass().add(
+                "welcome-subtitle"
+        );
+
+        return new VBox(
+                5,
+                title,
+                subtitle
+        );
     }
 
     // =========================================================
@@ -246,31 +199,27 @@ public class ExpenseController {
     }
 
     private VBox createStatCard(
-            String title,
-            Label value,
-            String styleClass
-    ) {
-
-        Label titleLabel = new Label(title);
+        String title,
+        Label value,
+        String styleClass
+) {
+        Label titleLabel =new Label(title);
+        titleLabel.setMinHeight(22);
+        titleLabel.setPrefHeight(22);
         titleLabel.getStyleClass().add("stat-title");
-
+        
         value.getStyleClass().add("stat-value");
-
-        VBox card = new VBox(8);
+        
+        VBox card =new VBox(10);
+        
         card.setPrefWidth(190);
         card.setPrefHeight(105);
-        card.getStyleClass().addAll(
-                "stat-card",
-                styleClass
-        );
-
-        card.getChildren().addAll(
-                titleLabel,
-                value
-        );
-
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(16, 18, 16, 18));
+        card.getStyleClass().addAll("stat-card",styleClass);
+        card.getChildren().addAll(titleLabel,value);
         return card;
-    }
+}
 
     // =========================================================
     // EXPENSE TABLE
@@ -278,72 +227,129 @@ public class ExpenseController {
 
     private VBox createExpenseTableSection() {
 
-        Label title = new Label("Expense Records");
-        title.getStyleClass().add("section-title");
+        Label title =
+                new Label("Expense Records");
 
-        Label eventLabel = new Label(
-                "Event: " + event.getName()
+        title.getStyleClass().add(
+                "section-title"
         );
-        eventLabel.getStyleClass().add("section-subtitle");
+
+        Label eventLabel =
+                new Label(
+                        "Event: " + event.getName()
+                );
+
+        eventLabel.getStyleClass().add(
+                "section-subtitle"
+        );
 
         createTable();
 
         VBox section = new VBox(12);
+
+        searchExpensesField.setPromptText("Search description or payer...");
+        searchExpensesField.getStyleClass().add("modern-text-field");
+        searchExpensesField.setPrefHeight(40);
+        HBox.setHgrow(searchExpensesField, Priority.ALWAYS);
+
+        expenseCategoryFilter.setValue("All categories");
+        expenseCategoryFilter.setPromptText("Category");
+        expenseCategoryFilter.setMaxWidth(170);
+        expenseCategoryFilter.getStyleClass().add("modern-text-field");
+
+        Button clearFilters = new Button("Clear");
+        clearFilters.getStyleClass().add("secondary-button");
+        clearFilters.setOnAction(e -> {
+            searchExpensesField.clear();
+            expenseCategoryFilter.setValue("All categories");
+            applyExpenseFilters();
+        });
+
+        searchExpensesField.textProperty().addListener(
+                (obs, oldValue, newValue) -> applyExpenseFilters());
+        expenseCategoryFilter.valueProperty().addListener(
+                (obs, oldValue, newValue) -> applyExpenseFilters());
+
+        HBox filters = new HBox(10,
+                searchExpensesField, expenseCategoryFilter, clearFilters);
+        filters.setAlignment(Pos.CENTER_LEFT);
+
         section.setPrefWidth(650);
-        section.getStyleClass().add("event-form-card");
+
+        section.getStyleClass().add(
+                "event-form-card"
+        );
+
+        VBox.setVgrow(
+                expenseTable,
+                Priority.ALWAYS
+        );
 
         section.getChildren().addAll(
                 title,
                 eventLabel,
+                filters,
                 expenseTable
         );
-
-        VBox.setVgrow(expenseTable, Priority.ALWAYS);
 
         return section;
     }
 
     private void createTable() {
 
-        expenseTable.getColumns().clear();
+        expenseTable
+                .getColumns()
+                .clear();
 
-        TableColumn<Expense, String> description =
+        TableColumn<Expense, String>
+                description =
                 new TableColumn<>("Expense");
 
         description.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getDescription()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getDescription()
+                        )
         );
 
-        TableColumn<Expense, String> category =
+        TableColumn<Expense, String>
+                category =
                 new TableColumn<>("Category");
 
         category.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getCategory()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getCategory()
+                        )
         );
 
-        TableColumn<Expense, String> amount =
+        TableColumn<Expense, String>
+                amount =
                 new TableColumn<>("Amount");
 
         amount.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        String.format(
-                                "₹ %.2f",
-                                data.getValue().getAmount()
+                data ->
+                        new SimpleStringProperty(
+                                String.format(
+                                        "₹ %.2f",
+                                        data.getValue()
+                                                .getAmount()
+                                )
                         )
-                )
         );
 
-        TableColumn<Expense, String> payer =
+        TableColumn<Expense, String>
+                payer =
                 new TableColumn<>("Paid By");
 
         payer.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getPayer()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getPayer()
+                        )
         );
 
         expenseTable.getColumns().addAll(
@@ -354,22 +360,33 @@ public class ExpenseController {
         );
 
         expenseTable.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS
+                TableView
+                        .CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS
         );
 
         expenseTable.setPrefHeight(400);
 
-        expenseTable.getSelectionModel()
+        expenseTable
+                .getSelectionModel()
                 .selectedItemProperty()
-                .addListener((obs, oldValue, newValue) -> {
+                .addListener(
+                        (obs, oldValue, newValue) -> {
 
-                    if (newValue != null) {
-                        selectedExpense = newValue;
-                        populateForm(newValue);
-                    }
-                });
+                            if (newValue != null) {
 
-        expenseTable.getStyleClass().add("modern-table");
+                                selectedExpense =
+                                        newValue;
+
+                                populateForm(
+                                        newValue
+                                );
+                            }
+                        }
+                );
+
+        expenseTable
+                .getStyleClass()
+                .add("modern-table");
     }
 
     // =========================================================
@@ -378,31 +395,61 @@ public class ExpenseController {
 
     private VBox createExpenseForm() {
 
-        Label title = new Label("Expense Details");
-        title.getStyleClass().add("section-title");
+        Label title =
+                new Label("Expense Details");
 
-        Label descriptionLabel = createFieldLabel("Description");
+        title.getStyleClass().add(
+                "section-title"
+        );
+
+        Label descriptionLabel =
+                createFieldLabel("Description");
 
         descriptionField.setPromptText(
                 "e.g. Flex Banner Printing"
         );
-        descriptionField.getStyleClass().add(
-                "modern-text-field"
+
+        descriptionField
+                .getStyleClass()
+                .add("modern-text-field");
+
+        Label amountLabel =
+                createFieldLabel("Amount");
+
+        amountField.setPromptText(
+                "e.g. 1200"
         );
 
-        Label amountLabel = createFieldLabel("Amount");
+        amountField
+                .getStyleClass()
+                .add("modern-text-field");
 
-        amountField.setPromptText("e.g. 1200");
-        amountField.getStyleClass().add(
-                "modern-text-field"
+        Label payerLabel =
+                createFieldLabel("Paid By");
+
+        /*
+         * Payer is a free-text field.
+         *
+         * Examples:
+         * Coordinator
+         * Subish
+         * Rahul
+         * Department Staff
+         */
+        payerField.setPromptText(
+                "e.g. Subish / Coordinator"
         );
 
-        Label payerLabel = createFieldLabel("Paid By");
+        payerField.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        payerCombo.setPromptText("Select participant");
-        payerCombo.setMaxWidth(Double.MAX_VALUE);
+        payerField
+                .getStyleClass()
+                .add("modern-text-field");
 
-        Label categoryLabel = createFieldLabel("Category");
+        Label categoryLabel =
+                createFieldLabel("Category");
 
         categoryCombo.setItems(
                 FXCollections.observableArrayList(
@@ -415,41 +462,114 @@ public class ExpenseController {
                 )
         );
 
-        categoryCombo.setPromptText("Select category");
-        categoryCombo.setMaxWidth(Double.MAX_VALUE);
+        categoryCombo.setPromptText(
+                "Select category"
+        );
 
-        Button addButton = new Button("Add Expense");
-        addButton.getStyleClass().add("primary-button");
-        addButton.setMaxWidth(Double.MAX_VALUE);
+        categoryCombo.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        Button updateButton = new Button("Update Expense");
-        updateButton.getStyleClass().add("secondary-button");
-        updateButton.setMaxWidth(Double.MAX_VALUE);
+        Button addButton =
+                new Button("Add Expense");
 
-        Button deleteButton = new Button("Delete Selected");
-        deleteButton.getStyleClass().add("danger-button");
-        deleteButton.setMaxWidth(Double.MAX_VALUE);
+        addButton
+                .getStyleClass()
+                .add("primary-button");
 
-        Button clearButton = new Button("Clear Form");
-        clearButton.getStyleClass().add("secondary-button");
-        clearButton.setMaxWidth(Double.MAX_VALUE);
+        addButton.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        Button backButton = new Button("Back to Events");
-        backButton.getStyleClass().add("secondary-button");
-        backButton.setMaxWidth(Double.MAX_VALUE);
+        Button updateButton =
+                new Button("Update Expense");
 
-        addButton.setOnAction(e -> addExpense());
-        updateButton.setOnAction(e -> updateExpense());
-        deleteButton.setOnAction(e -> deleteExpense());
-        clearButton.setOnAction(e -> clearForm());
-        backButton.setOnAction(e -> openEvents());
+        updateButton
+                .getStyleClass()
+                .add("secondary-button");
+
+        updateButton.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        Button deleteButton =
+                new Button("Delete Selected");
+
+        deleteButton
+                .getStyleClass()
+                .add("danger-button");
+
+        deleteButton.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        Button clearButton =
+                new Button("Clear Form");
+
+        clearButton
+                .getStyleClass()
+                .add("secondary-button");
+
+        clearButton.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        Button attachReceiptButton = new Button("Attach / Replace Receipt");
+        attachReceiptButton.getStyleClass().add("secondary-button");
+        attachReceiptButton.setMaxWidth(Double.MAX_VALUE);
+        attachReceiptButton.setOnAction(e -> attachReceipt());
+        
+        Button openReceiptButton = new Button("Open Receipt");
+        openReceiptButton.getStyleClass().add("secondary-button");
+        openReceiptButton.setMaxWidth(Double.MAX_VALUE);
+        openReceiptButton.setOnAction(e -> openReceipt());
+        
+        Button removeReceiptButton = new Button("Remove Receipt");
+        removeReceiptButton.getStyleClass().add("secondary-button");
+        removeReceiptButton.setMaxWidth(Double.MAX_VALUE);
+        removeReceiptButton.setOnAction(e -> removeReceipt());
+
+        Button backButton =
+                new Button("Back to Events");
+
+        backButton
+                .getStyleClass()
+                .add("secondary-button");
+
+        backButton.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        addButton.setOnAction(
+                e -> addExpense()
+        );
+
+        updateButton.setOnAction(
+                e -> updateExpense()
+        );
+
+        deleteButton.setOnAction(
+                e -> deleteExpense()
+        );
+
+        clearButton.setOnAction(
+                e -> clearForm()
+        );
+
+        backButton.setOnAction(
+                e -> navigationManager.showEvents()
+        );
 
         VBox form = new VBox(10);
 
         form.setPrefWidth(300);
-        form.getStyleClass().add("event-form-card");
+
+        form.getStyleClass().add(
+                "event-form-card"
+        );
 
         form.getChildren().addAll(
+
                 title,
 
                 descriptionLabel,
@@ -459,7 +579,7 @@ public class ExpenseController {
                 amountField,
 
                 payerLabel,
-                payerCombo,
+                payerField,
 
                 categoryLabel,
                 categoryCombo,
@@ -470,6 +590,9 @@ public class ExpenseController {
                 updateButton,
                 deleteButton,
                 clearButton,
+                attachReceiptButton,
+                openReceiptButton,
+                removeReceiptButton,
 
                 new Separator(),
 
@@ -479,43 +602,18 @@ public class ExpenseController {
         return form;
     }
 
-    private Label createFieldLabel(String text) {
+    private Label createFieldLabel(
+            String text
+    ) {
 
-        Label label = new Label(text);
-        label.getStyleClass().add("field-label");
+        Label label =
+                new Label(text);
+
+        label.getStyleClass().add(
+                "field-label"
+        );
 
         return label;
-    }
-
-    // =========================================================
-    // LOAD PARTICIPANTS
-    // =========================================================
-
-    private void loadParticipants() {
-
-        try {
-
-            List<Participant> participants =
-                    participantService.getParticipantsByEvent(
-                            event.getId()
-                    );
-
-            payerCombo.getItems().clear();
-
-            for (Participant participant : participants) {
-
-                payerCombo.getItems().add(
-                        participant.getStudentName()
-                );
-            }
-
-        } catch (Exception e) {
-
-            showError(
-                    "Unable to load participants",
-                    e.getMessage()
-            );
-        }
     }
 
     // =========================================================
@@ -527,12 +625,16 @@ public class ExpenseController {
         try {
 
             List<Expense> expenses =
-                    expenseService.getExpensesByEvent(
-                            event.getId()
-                    );
+                    expenseService
+                            .getExpensesByEvent(
+                                    event.getId()
+                            );
 
-            expenseTable.getItems().setAll(expenses);
+            allExpenses.setAll(expenses);
+            expenseTable.setItems(filteredExpenses);
+            applyExpenseFilters();
 
+            // Statistics describe the complete event, not just filtered rows.
             updateStatistics(expenses);
 
         } catch (Exception e) {
@@ -542,6 +644,33 @@ public class ExpenseController {
                     e.getMessage()
             );
         }
+    }
+
+    private void applyExpenseFilters() {
+        String query = searchExpensesField.getText() == null
+                ? "" : searchExpensesField.getText().trim().toLowerCase();
+        String category = expenseCategoryFilter.getValue();
+
+        filteredExpenses.setPredicate(expense -> {
+            String description = expense.getDescription() == null
+                    ? "" : expense.getDescription().toLowerCase();
+            String payer = expense.getPayer() == null
+                    ? "" : expense.getPayer().toLowerCase();
+            String expenseCategory = expense.getCategory() == null
+                    ? "" : expense.getCategory();
+
+            boolean matchesText = query.isEmpty()
+                    || description.contains(query)
+                    || payer.contains(query)
+                    || expenseCategory.toLowerCase().contains(query)
+                    || String.valueOf(expense.getAmount()).contains(query);
+
+            boolean matchesCategory = category == null
+                    || category.equals("All categories")
+                    || expenseCategory.equalsIgnoreCase(category);
+
+            return matchesText && matchesCategory;
+        });
     }
 
     // =========================================================
@@ -554,7 +683,11 @@ public class ExpenseController {
 
         double total = 0;
 
-        for (Expense expense : expenses) {
+        for (
+                Expense expense :
+                expenses
+        ) {
+
             total += expense.getAmount();
         }
 
@@ -562,19 +695,38 @@ public class ExpenseController {
                 event.getBudget() - total;
 
         totalExpenseLabel.setText(
-                String.format("₹ %.2f", total)
+                String.format(
+                        "₹ %.2f",
+                        total
+                )
         );
 
+        /*
+         * For now, Total Paid represents
+         * the total amount recorded as expenses.
+         *
+         * Later, when Expense Settlement is added,
+         * this can be changed to show only
+         * expenses whose settlement status is Settled.
+         */
         totalPaidLabel.setText(
-                String.format("₹ %.2f", total)
+                String.format(
+                        "₹ %.2f",
+                        total
+                )
         );
 
         expenseCountLabel.setText(
-                String.valueOf(expenses.size())
+                String.valueOf(
+                        expenses.size()
+                )
         );
 
         remainingBudgetLabel.setText(
-                String.format("₹ %.2f", remaining)
+                String.format(
+                        "₹ %.2f",
+                        remaining
+                )
         );
     }
 
@@ -587,30 +739,70 @@ public class ExpenseController {
         try {
 
             String description =
-                    descriptionField.getText().trim();
+                    descriptionField
+                            .getText()
+                            .trim();
 
-            double amount =
-                    Double.parseDouble(
-                            amountField.getText().trim()
-                    );
+            String amountText =
+                    amountField
+                            .getText()
+                            .trim();
 
             String payer =
-                    payerCombo.getValue();
+                    payerField
+                            .getText()
+                            .trim();
 
             String category =
                     categoryCombo.getValue();
 
-            if (payer == null || payer.isBlank()) {
+            if (description.isBlank()) {
 
                 showError(
                         "Invalid Expense",
-                        "Please select who paid for this expense."
+                        "Please enter an expense description."
                 );
 
                 return;
             }
 
-            if (category == null || category.isBlank()) {
+            if (amountText.isBlank()) {
+
+                showError(
+                        "Invalid Amount",
+                        "Please enter the expense amount."
+                );
+
+                return;
+            }
+
+            double amount =
+                    Double.parseDouble(
+                            amountText
+                    );
+
+            if (amount <= 0) {
+
+                showError(
+                        "Invalid Amount",
+                        "Expense amount must be greater than zero."
+                );
+
+                return;
+            }
+
+            if (payer.isBlank()) {
+
+                showError(
+                        "Invalid Expense",
+                        "Please enter who paid for this expense."
+                );
+
+                return;
+            }
+
+            if (category == null ||
+                    category.isBlank()) {
 
                 showError(
                         "Invalid Expense",
@@ -620,17 +812,21 @@ public class ExpenseController {
                 return;
             }
 
-            Expense expense = new Expense(
-                    event.getId(),
-                    description,
-                    amount,
-                    payer,
-                    category
+            Expense expense =
+                    new Expense(
+                            event.getId(),
+                            description,
+                            amount,
+                            payer,
+                            category
+                    );
+
+            expenseService.addExpense(
+                    expense
             );
 
-            expenseService.addExpense(expense);
-
             clearForm();
+
             loadExpenses();
 
             showInformation(
@@ -672,22 +868,94 @@ public class ExpenseController {
 
         try {
 
+            String description =
+                    descriptionField
+                            .getText()
+                            .trim();
+
+            String amountText =
+                    amountField
+                            .getText()
+                            .trim();
+
+            String payer =
+                    payerField
+                            .getText()
+                            .trim();
+
+            String category =
+                    categoryCombo.getValue();
+
+            if (description.isBlank()) {
+
+                showError(
+                        "Invalid Expense",
+                        "Please enter an expense description."
+                );
+
+                return;
+            }
+
+            if (amountText.isBlank()) {
+
+                showError(
+                        "Invalid Amount",
+                        "Please enter the expense amount."
+                );
+
+                return;
+            }
+
+            double amount =
+                    Double.parseDouble(
+                            amountText
+                    );
+
+            if (amount <= 0) {
+
+                showError(
+                        "Invalid Amount",
+                        "Expense amount must be greater than zero."
+                );
+
+                return;
+            }
+
+            if (payer.isBlank()) {
+
+                showError(
+                        "Invalid Expense",
+                        "Please enter who paid for this expense."
+                );
+
+                return;
+            }
+
+            if (category == null ||
+                    category.isBlank()) {
+
+                showError(
+                        "Invalid Expense",
+                        "Please select an expense category."
+                );
+
+                return;
+            }
+
             selectedExpense.setDescription(
-                    descriptionField.getText().trim()
+                    description
             );
 
             selectedExpense.setAmount(
-                    Double.parseDouble(
-                            amountField.getText().trim()
-                    )
+                    amount
             );
 
             selectedExpense.setPayer(
-                    payerCombo.getValue()
+                    payer
             );
 
             selectedExpense.setCategory(
-                    categoryCombo.getValue()
+                    category
             );
 
             expenseService.updateExpense(
@@ -695,6 +963,7 @@ public class ExpenseController {
             );
 
             clearForm();
+
             loadExpenses();
 
             showInformation(
@@ -734,68 +1003,83 @@ public class ExpenseController {
             return;
         }
 
-        Alert confirmation = new Alert(
-                Alert.AlertType.CONFIRMATION
+        Alert confirmation =
+                new Alert(
+                        Alert.AlertType.CONFIRMATION
+                );
+
+        confirmation.setTitle(
+                "Delete Expense"
         );
 
-        confirmation.setTitle("Delete Expense");
         confirmation.setHeaderText(
                 "Delete selected expense?"
         );
 
         confirmation.setContentText(
-                selectedExpense.getDescription()
+                selectedExpense
+                        .getDescription()
                         + " - ₹ "
                         + String.format(
                                 "%.2f",
-                                selectedExpense.getAmount()
+                                selectedExpense
+                                        .getAmount()
                         )
         );
 
-        confirmation.showAndWait().ifPresent(response -> {
+        confirmation
+                .showAndWait()
+                .ifPresent(response -> {
 
-            if (response == ButtonType.OK) {
+                    if (response ==
+                            ButtonType.OK) {
 
-                try {
+                        try {
 
-                    expenseService.deleteExpense(
-                            selectedExpense.getId()
-                    );
+                            expenseService
+                                    .deleteExpense(
+                                            selectedExpense
+                                                    .getId()
+                                    );
 
-                    clearForm();
-                    loadExpenses();
+                            clearForm();
 
-                    showInformation(
-                            "Expense Deleted",
-                            "The expense was deleted successfully."
-                    );
+                            loadExpenses();
 
-                } catch (Exception e) {
+                            showInformation(
+                                    "Expense Deleted",
+                                    "The expense was deleted successfully."
+                            );
 
-                    showError(
-                            "Unable to Delete Expense",
-                            e.getMessage()
-                    );
-                }
-            }
-        });
+                        } catch (Exception e) {
+showError(
+                                    "Unable to Delete Expense",
+                                    e.getMessage()
+                            );
+                        }
+                    }
+                });
     }
 
     // =========================================================
     // FORM
     // =========================================================
 
-    private void populateForm(Expense expense) {
+    private void populateForm(
+            Expense expense
+    ) {
 
         descriptionField.setText(
                 expense.getDescription()
         );
 
         amountField.setText(
-                String.valueOf(expense.getAmount())
+                String.valueOf(
+                        expense.getAmount()
+                )
         );
 
-        payerCombo.setValue(
+        payerField.setText(
                 expense.getPayer()
         );
 
@@ -809,92 +1093,18 @@ public class ExpenseController {
         selectedExpense = null;
 
         descriptionField.clear();
+
         amountField.clear();
 
-        payerCombo.getSelectionModel().clearSelection();
-        categoryCombo.getSelectionModel().clearSelection();
+        payerField.clear();
 
-        expenseTable.getSelectionModel().clearSelection();
-    }
+        categoryCombo
+                .getSelectionModel()
+                .clearSelection();
 
-    // =========================================================
-    // NAVIGATION
-    // =========================================================
-
-    private void openDashboard() {
-
-        EventController controller =
-                new EventController(stage);
-
-        stage.setScene(
-                new Scene(
-                        controller.createView(),
-                        1100,
-                        700
-                )
-        );
-    }
-
-    private void openEvents() {
-
-        EventController controller =
-                new EventController(stage);
-
-        stage.setScene(
-                new Scene(
-                        controller.createView(),
-                        1100,
-                        700
-                )
-        );
-    }
-
-    private void openParticipants() {
-
-        ParticipantController controller =
-                new ParticipantController(
-                        stage,
-                        event
-                );
-
-        stage.setScene(
-                new Scene(
-                        controller.createView(),
-                        1100,
-                        700
-                )
-        );
-    }
-
-    private void openSettlement() {
-
-        SettlementController controller =
-                new SettlementController(
-                        stage,
-                        event
-                );
-
-        stage.setScene(
-                new Scene(
-                        controller.createView(),
-                        1100,
-                        700
-                )
-        );
-    }
-
-    private void logout() {
-
-        LoginController controller =
-                new LoginController(stage);
-
-        stage.setScene(
-                new Scene(
-                        controller.createView(),
-                        700,
-                        500
-                )
-        );
+        expenseTable
+                .getSelectionModel()
+                .clearSelection();
     }
 
     // =========================================================
@@ -906,13 +1116,21 @@ public class ExpenseController {
             String message
     ) {
 
-        Alert alert = new Alert(
-                Alert.AlertType.ERROR
-        );
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.ERROR
+                );
 
         alert.setTitle(title);
+
         alert.setHeaderText(null);
-        alert.setContentText(message);
+
+        alert.setContentText(
+                message == null
+                        ? "An unexpected error occurred."
+                        : message
+        );
+
         alert.showAndWait();
     }
 
@@ -921,13 +1139,241 @@ public class ExpenseController {
             String message
     ) {
 
-        Alert alert = new Alert(
-                Alert.AlertType.INFORMATION
-        );
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.INFORMATION
+                );
 
         alert.setTitle(title);
+
         alert.setHeaderText(null);
-        alert.setContentText(message);
+
+        alert.setContentText(
+                message
+        );
+
         alert.showAndWait();
     }
+    
+    private static final Path RECEIPTS_DIRECTORY =Paths.get("data", "receipts").toAbsolutePath().normalize();
+
+private void attachReceipt() {
+    if (selectedExpense == null || selectedExpense.getId() <= 0) {
+        showError("No Expense Selected",
+                "Select an existing expense before attaching a receipt.");
+        return;
+    }
+
+    FileChooser chooser = new FileChooser();
+    chooser.setTitle("Select Expense Receipt");
+    chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter(
+                    "Receipt files (PDF and images)",
+                    "*.pdf", "*.png", "*.jpg", "*.jpeg",
+                    "*.gif", "*.bmp", "*.webp"
+            )
+    );
+
+    File selectedFile = chooser.showOpenDialog(
+            expenseTable.getScene().getWindow()
+    );
+
+    if (selectedFile == null) {
+        return;
+    }
+
+    Path copiedFile = null;
+
+    try {
+        String fileName = selectedFile.getName();
+        int dot = fileName.lastIndexOf('.');
+        String extension = dot >= 0
+                ? fileName.substring(dot).toLowerCase(Locale.ROOT)
+                : "";
+
+        if (!extension.matches(
+                "\\.(pdf|png|jpe?g|gif|bmp|webp)")) {
+            showError("Unsupported File",
+                    "Select a PDF or supported image file.");
+            return;
+        }
+
+        Files.createDirectories(RECEIPTS_DIRECTORY);
+
+        String safeName = "expense_" + selectedExpense.getId()
+                + "_" + UUID.randomUUID() + extension;
+
+        copiedFile = RECEIPTS_DIRECTORY.resolve(safeName)
+                .normalize();
+
+        if (!copiedFile.startsWith(RECEIPTS_DIRECTORY)) {
+            showError("Invalid File",
+                    "The selected receipt path is not valid.");
+            return;
+        }
+
+        Files.copy(
+                selectedFile.toPath(),
+                copiedFile,
+                StandardCopyOption.COPY_ATTRIBUTES
+        );
+
+        String oldPath = selectedExpense.getReceiptPath();
+        String storedPath = Paths.get("data", "receipts", safeName)
+                .toString();
+
+        if (!expenseService.updateReceiptPath(
+                selectedExpense.getId(), storedPath)) {
+            Files.deleteIfExists(copiedFile);
+            showError("Receipt Not Saved",
+                    "The receipt path could not be saved.");
+            return;
+        }
+
+        selectedExpense.setReceiptPath(storedPath);
+
+        // Remove the previous managed copy only after the new path is saved.
+        deleteManagedReceipt(oldPath);
+
+        loadExpenses();
+
+        showInformation("Receipt Attached",
+                "The receipt was attached successfully.");
+
+    } catch (Exception ex) {
+        if (copiedFile != null) {
+            try {
+                Files.deleteIfExists(copiedFile);
+            } catch (IOException ignored) {
+                // Preserve the original error.
+            }
+        }
+
+        showError("Unable to Attach Receipt",
+                ex.getMessage() == null
+                        ? "An unexpected error occurred."
+                        : ex.getMessage());
+    }
+}
+
+private void openReceipt() {
+    if (selectedExpense == null) {
+        showError("No Expense Selected",
+                "Select an expense first.");
+        return;
+    }
+
+    String receiptPath = selectedExpense.getReceiptPath();
+
+    if (receiptPath == null || receiptPath.isBlank()) {
+        showInformation("No Receipt",
+                "This expense does not have an attached receipt.");
+        return;
+    }
+
+    try {
+        Path path = Paths.get(receiptPath).toAbsolutePath().normalize();
+
+        // Receipts should only be opened from the managed folder.
+        if (!path.startsWith(RECEIPTS_DIRECTORY)) {
+            showError("Invalid Receipt Path",
+                    "This receipt is not stored in the managed receipts folder.");
+            return;
+        }
+
+        if (!Files.isRegularFile(path)) {
+            showError("Receipt Missing",
+                    "The receipt file could not be found.");
+            return;
+        }
+
+        if (!Desktop.isDesktopSupported()
+                || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+            showError("Open Not Supported",
+                    "Your system does not support opening files from this application.");
+            return;
+        }
+
+        Desktop.getDesktop().open(path.toFile());
+
+    } catch (Exception ex) {
+        showError("Unable to Open Receipt",
+                ex.getMessage() == null
+                        ? "An unexpected error occurred."
+                        : ex.getMessage());
+    }
+}
+
+private void removeReceipt() {
+    if (selectedExpense == null || selectedExpense.getId() <= 0) {
+        showError("No Expense Selected",
+                "Select an existing expense first.");
+        return;
+    }
+
+    String oldPath = selectedExpense.getReceiptPath();
+
+    if (oldPath == null || oldPath.isBlank()) {
+        showInformation("No Receipt",
+                "This expense does not have a receipt attached.");
+        return;
+    }
+
+    Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+    confirmation.setTitle("Remove Receipt");
+    confirmation.setHeaderText("Remove the attached receipt?");
+    confirmation.setContentText(
+            "The expense record and settlement history will remain unchanged.");
+
+    confirmation.showAndWait().ifPresent(response -> {
+        if (response != ButtonType.OK) {
+            return;
+        }
+
+        try {
+            if (expenseService.updateReceiptPath(
+                    selectedExpense.getId(), null)) {
+
+                selectedExpense.setReceiptPath(null);
+                deleteManagedReceipt(oldPath);
+                loadExpenses();
+
+                showInformation("Receipt Removed",
+                        "The receipt attachment was removed.");
+            } else {
+                showError("Unable to Remove Receipt",
+                        "The database record was not updated.");
+            }
+        } catch (Exception ex) {
+            showError("Unable to Remove Receipt",
+                    ex.getMessage() == null
+                            ? "An unexpected error occurred."
+                            : ex.getMessage());
+        }
+    });
+}
+
+private void deleteManagedReceipt(String storedPath) {
+    if (storedPath == null || storedPath.isBlank()) {
+        return;
+    }
+
+    try {
+        Path path = Paths.get(storedPath)
+                .toAbsolutePath().normalize();
+
+        if (path.startsWith(RECEIPTS_DIRECTORY)
+                && Files.isRegularFile(path)) {
+            Files.deleteIfExists(path);
+        }
+    } catch (Exception ex) {
+        System.err.println(
+                "Could not delete old receipt file: "
+                        + ex.getMessage()
+        );
+    }
+}
+
+
+
 }

@@ -2,7 +2,6 @@ package com.clubexpense.dao;
 
 import com.clubexpense.db.SQLConnection;
 import com.clubexpense.model.Participant;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -192,4 +191,22 @@ public class ParticipantDAO {
                 result.getDouble("fee")
         );
     }
+    public double getPaidRegistrationTotalByEventId(int eventId)throws SQLException {
+        String sql = """
+        SELECT COALESCE(SUM(fee), 0)
+        FROM participants
+        WHERE event_id = ?
+        AND LOWER(TRIM(status)) = 'paid'
+        """;
+        try (Connection connection = SQLConnection.getConnection();
+        PreparedStatement statement =connection.prepareStatement(sql)) {statement.setInt(1, eventId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    return result.getDouble(1);
+                }
+            }
+        }
+        return 0.0;
+    }
+
 }
